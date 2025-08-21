@@ -8,7 +8,7 @@ import android.content.Context
 
 @Database(
     entities = [Habit::class],
-    version = 3, // Increased version due to new completedDates property
+    version = 3,
     exportSchema = false
 )
 @TypeConverters(Converters::class)

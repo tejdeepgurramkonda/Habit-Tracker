@@ -11,7 +11,6 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
@@ -21,191 +20,146 @@ import androidx.compose.ui.unit.sp
 import java.text.SimpleDateFormat
 import java.util.*
 
-data class CalendarDay(
-    val date: Date,
-    val dayOfWeek: String,
-    val dayOfMonth: Int,
-    val isSelected: Boolean = false,
-    val isToday: Boolean = false,
-    val isPastDate: Boolean = false,
-    val isFutureDate: Boolean = false
-)
-
 @Composable
 fun HorizontalCalendar(
+    habits: List<Habit>,
     selectedDate: Date,
     onDateSelected: (Date) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val timeBasedColors = LocalTimeBasedColors.current
     val calendar = Calendar.getInstance()
-    val today = Calendar.getInstance()
+    val today = Date()
 
-    // Generate all days of the current month
-    // Update when selectedDate changes to refresh isSelected state
-    val days = remember(selectedDate) {
-        val calendar = Calendar.getInstance()
-        mutableListOf<CalendarDay>().apply {
-            // Set calendar to the first day of the selected month
-            calendar.time = selectedDate
-            calendar.set(Calendar.DAY_OF_MONTH, 1)
+    // Generate dates for the current month
+    val currentMonth = calendar.get(Calendar.MONTH)
+    val currentYear = calendar.get(Calendar.YEAR)
+    calendar.set(currentYear, currentMonth, 1)
 
-            val currentMonth = calendar.get(Calendar.MONTH)
-            val currentYear = calendar.get(Calendar.YEAR)
+    val datesInMonth = mutableListOf<Date>()
+    val maxDayInMonth = calendar.getActualMaximum(Calendar.DAY_OF_MONTH)
 
-            // Generate all days in the month
-            while (calendar.get(Calendar.MONTH) == currentMonth && calendar.get(Calendar.YEAR) == currentYear) {
-                val currentDate = calendar.time
-                val dayOfWeek = SimpleDateFormat("EEE", Locale.getDefault()).format(currentDate)
-                val dayOfMonth = calendar.get(Calendar.DAY_OF_MONTH)
-
-                // Check if this date is today
-                val isToday = isSameDay(currentDate.time, today.timeInMillis)
-                val isSelected = isSameDay(currentDate.time, selectedDate.time)
-
-                // Check if this is a past or future date
-                val isPastDate = currentDate.time < today.timeInMillis && !isToday
-                val isFutureDate = currentDate.time > today.timeInMillis && !isToday
-
-                add(
-                    CalendarDay(
-                        date = Date(currentDate.time),
-                        dayOfWeek = dayOfWeek,
-                        dayOfMonth = dayOfMonth,
-                        isSelected = isSelected,
-                        isToday = isToday,
-                        isPastDate = isPastDate,
-                        isFutureDate = isFutureDate
-                    )
-                )
-
-                calendar.add(Calendar.DAY_OF_MONTH, 1)
-            }
-        }
+    for (day in 1..maxDayInMonth) {
+        calendar.set(Calendar.DAY_OF_MONTH, day)
+        datesInMonth.add(Date(calendar.timeInMillis))
     }
 
     val listState = rememberLazyListState()
 
-    // Calculate proper centering offset to align today's date below the Today button
-    val centerOffset = remember {
-        // Calculate offset to center the selected item perfectly below the Today button
-        // Screen center minus half of item width (45dp/2 = 22.5dp) ≈ -100 to -120
-        -550// Optimized for centering below Today button
-    }
-
-    // Initial scroll to center today's date when calendar first loads
+    // Auto-scroll to today's date
     LaunchedEffect(Unit) {
-        val todayIndex = days.indexOfFirst { it.isToday }
-        if (todayIndex >= 0) {
-            // Use scrollToItem immediately to position today's date below Today button
-            listState.scrollToItem(
-                index = todayIndex,
-                scrollOffset = centerOffset
-            )
+        val todayIndex = datesInMonth.indexOfFirst { date ->
+            isSameDay(date.time, today.time)
+        }
+        if (todayIndex != -1) {
+            listState.animateScrollToItem(maxOf(0, todayIndex - 3))
         }
     }
 
-    // Scroll to selected date when it changes (especially for Today button)
-    LaunchedEffect(selectedDate) {
-        val selectedIndex = days.indexOfFirst { isSameDay(it.date.time, selectedDate.time) }
-        if (selectedIndex >= 0) {
-            // Always animate to center the selected date below the Today button
-            listState.animateScrollToItem(
-                index = selectedIndex,
-                scrollOffset = centerOffset
-            )
-        }
-    }
-
-    // Remove Card wrapper - place LazyRow directly on screen
     LazyRow(
         state = listState,
         modifier = modifier
-            .fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(6.dp), // Increased spacing
-        contentPadding = PaddingValues(horizontal = 16.dp), // Increased padding for better scrolling
-        userScrollEnabled = true // Explicitly enable user scrolling
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        contentPadding = PaddingValues(horizontal = 8.dp)
     ) {
-        items(days) { day ->
-            CalendarDayCard(
-                calendarDay = day,
-                timeBasedColors = timeBasedColors,
-                onDateSelected = onDateSelected
+        items(datesInMonth) { date ->
+            CalendarDateItem(
+                date = date,
+                habits = habits,
+                isSelected = isSameDay(date.time, selectedDate.time),
+                isToday = isSameDay(date.time, today.time),
+                onClick = { onDateSelected(date) }
             )
         }
     }
 }
 
 @Composable
-private fun CalendarDayCard(
-    calendarDay: CalendarDay,
-    timeBasedColors: TimeBasedColors,
-    onDateSelected: (Date) -> Unit
+private fun CalendarDateItem(
+    date: Date,
+    habits: List<Habit>,
+    isSelected: Boolean,
+    isToday: Boolean,
+    onClick: () -> Unit
 ) {
-    val backgroundColor = when {
-        calendarDay.isSelected -> timeBasedColors.cardContentColor
-        calendarDay.isToday -> timeBasedColors.cardContentColor.copy(alpha = 0.3f)
-        else -> Color.Transparent
+    val timeBasedColors = LocalTimeBasedColors.current
+    val calendar = Calendar.getInstance().apply { time = date }
+    val dayOfMonth = calendar.get(Calendar.DAY_OF_MONTH)
+    val dayOfWeek = SimpleDateFormat("EEE", Locale.getDefault()).format(date).uppercase()
+
+    // Check if any habits are completed for this date
+    val hasCompletedHabits = habits.any { habit ->
+        habit.completedDates.any { completedDate ->
+            isSameDay(completedDate, date.time)
+        }
     }
 
-    val textColor = when {
-        calendarDay.isSelected -> Color.White
-        calendarDay.isToday -> timeBasedColors.cardContentColor
-        else -> timeBasedColors.textPrimaryColor
-    }
+    // Determine if this is a future date
+    val isFuture = date.after(Date())
 
-    // Apply opacity for past dates (completed dates)
-    val cardOpacity = when {
-        calendarDay.isPastDate -> 0.6f
-        calendarDay.isFutureDate -> 1.0f
-        else -> 1.0f
-    }
-
-    val contentAlpha = if (calendarDay.isPastDate) 0.6f else 1.0f
-
-    // Simple Box approach without any complex border logic
     Box(
         modifier = Modifier
-            .width(45.dp)
-            .height(65.dp)
-            .alpha(cardOpacity)
-            .clip(RoundedCornerShape(22.dp))
-            .background(backgroundColor)
-            .clickable { onDateSelected(calendarDay.date) },
+            .size(width = 48.dp, height = 70.dp)
+            .clip(RoundedCornerShape(24.dp))
+            .background(
+                when {
+                    isSelected -> timeBasedColors.cardContentColor
+                    isToday -> timeBasedColors.cardContentColor.copy(alpha = 0.3f)
+                    else -> Color.Transparent
+                }
+            )
+            .clickable { onClick() }
+            .padding(4.dp),
         contentAlignment = Alignment.Center
     ) {
         Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(6.dp)
-                .alpha(contentAlpha),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
-            // Day of week (e.g., "Wed")
             Text(
-                text = calendarDay.dayOfWeek.uppercase(),
+                text = dayOfWeek,
+                style = MaterialTheme.typography.bodySmall,
+                color = when {
+                    isSelected -> Color.White
+                    hasCompletedHabits && !isFuture -> timeBasedColors.textSecondaryColor.copy(alpha = 0.6f)
+                    else -> timeBasedColors.textSecondaryColor
+                },
                 fontSize = 10.sp,
-                fontWeight = FontWeight.Medium,
-                color = textColor.copy(alpha = 0.8f),
-                textAlign = TextAlign.Center
+                fontWeight = FontWeight.Medium
             )
 
-            Spacer(modifier = Modifier.height(2.dp))
+            Spacer(modifier = Modifier.height(4.dp))
 
-            // Day of month (e.g., "17")
             Text(
-                text = calendarDay.dayOfMonth.toString(),
-                fontSize = 16.sp,
-                fontWeight = FontWeight.Bold,
-                color = textColor,
+                text = dayOfMonth.toString(),
+                style = MaterialTheme.typography.titleMedium,
+                color = when {
+                    isSelected -> Color.White
+                    hasCompletedHabits && !isFuture -> timeBasedColors.textPrimaryColor.copy(alpha = 0.6f)
+                    else -> timeBasedColors.textPrimaryColor
+                },
+                fontWeight = if (isToday) FontWeight.Bold else FontWeight.Medium,
                 textAlign = TextAlign.Center
             )
+
+            // Completion indicator
+            if (hasCompletedHabits && !isFuture) {
+                Spacer(modifier = Modifier.height(2.dp))
+                Box(
+                    modifier = Modifier
+                        .size(4.dp)
+                        .background(
+                            if (isSelected) Color.White else timeBasedColors.cardContentColor,
+                            RoundedCornerShape(2.dp)
+                        )
+                )
+            }
         }
     }
 }
 
-// Helper function to check if two timestamps are on the same calendar day
 private fun isSameDay(timestamp1: Long, timestamp2: Long): Boolean {
     val cal1 = Calendar.getInstance().apply { timeInMillis = timestamp1 }
     val cal2 = Calendar.getInstance().apply { timeInMillis = timestamp2 }

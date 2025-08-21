@@ -20,6 +20,16 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Info
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material.icons.filled.Help
+import androidx.compose.material.icons.filled.ExitToApp
+import androidx.compose.material.icons.filled.AccountCircle
+import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material.icons.filled.Assessment
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -40,8 +50,10 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import kotlinx.coroutines.launch
+import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
+import java.util.Locale
 import kotlin.math.cos
 import kotlin.math.sin
 
@@ -352,82 +364,155 @@ fun HabitDashboardScreen(
     val habits by viewModel.habits.collectAsState()
     val showDialog by viewModel.showDialog.collectAsState()
     val selectedHabit by viewModel.selectedHabit.collectAsState()
+    val selectedDate by viewModel.selectedDate.collectAsState()
+
+    val drawerState = rememberDrawerState(DrawerValue.Closed)
+    val scope = rememberCoroutineScope()
+
+    // Get current month and year
+    val currentMonthYear = remember {
+        val formatter = SimpleDateFormat("MMMM yyyy", Locale.getDefault())
+        formatter.format(Date())
+    }
 
     DynamicGradientBackground {
         val timeBasedColors = LocalTimeBasedColors.current
 
-        Scaffold(
-            containerColor = Color.Transparent,
-            floatingActionButton = {
-                FloatingActionButton(
-                    onClick = { viewModel.showAddDialog() },
-                    containerColor = timeBasedColors.cardContentColor,
-                    contentColor = Color.White,
-                    modifier = Modifier.shadow(8.dp, CircleShape)
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Add,
-                        contentDescription = "Add Habit",
-                        tint = Color.White
-                    )
-                }
+        ModalNavigationDrawer(
+            drawerState = drawerState,
+            drawerContent = {
+                NavigationDrawerContent(
+                    timeBasedColors = timeBasedColors,
+                    onCloseDrawer = {
+                        scope.launch { drawerState.close() }
+                    }
+                )
             }
-        ) { paddingValues ->
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(paddingValues)
-                    .padding(top = 16.dp)
-            ) {
-                // Habit Progress Bar
-                ExpandableHabitProgressBar(
-                    habits = habits,
-                    modifier = Modifier.padding(vertical = 16.dp)
-                )
+        ) {
+            Scaffold(
+                containerColor = Color.Transparent,
+                topBar = {
+                    TopAppBar(
+                        title = {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = "Today",
+                                    color = timeBasedColors.textPrimaryColor,
+                                    fontWeight = FontWeight.Bold,
+                                    style = MaterialTheme.typography.titleLarge
+                                )
 
-                // My Habits title
-                Text(
-                    text = "My Habits",
-                    style = MaterialTheme.typography.headlineMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = timeBasedColors.textPrimaryColor,
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
-                )
-
-                // Habits List
-                LazyColumn(
+                                Text(
+                                    text = currentMonthYear,
+                                    color = timeBasedColors.textPrimaryColor,
+                                    fontWeight = FontWeight.Medium,
+                                    style = MaterialTheme.typography.titleMedium,
+                                    modifier = Modifier.padding(end = 48.dp) // Account for menu icon space
+                                )
+                            }
+                        },
+                        navigationIcon = {
+                            IconButton(
+                                onClick = {
+                                    scope.launch { drawerState.open() }
+                                }
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Menu,
+                                    contentDescription = "Open Menu",
+                                    tint = timeBasedColors.textPrimaryColor
+                                )
+                            }
+                        },
+                        colors = TopAppBarDefaults.topAppBarColors(
+                            containerColor = Color.Transparent
+                        )
+                    )
+                },
+                floatingActionButton = {
+                    FloatingActionButton(
+                        onClick = { viewModel.showAddDialog() },
+                        containerColor = timeBasedColors.cardContentColor,
+                        contentColor = Color.White,
+                        modifier = Modifier.shadow(8.dp, CircleShape)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Add,
+                            contentDescription = "Add Habit",
+                            tint = Color.White
+                        )
+                    }
+                }
+            ) { paddingValues ->
+                Column(
                     modifier = Modifier
                         .fillMaxSize()
-                        .padding(horizontal = 16.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp),
-                    contentPadding = PaddingValues(vertical = 16.dp)
+                        .padding(paddingValues)
+                        .padding(top = 8.dp)
                 ) {
-                    if (habits.isEmpty()) {
-                        item {
-                            EmptyStateCard()
-                        }
-                    } else {
-                        items(habits, key = { habit -> habit.id }) { habit ->
-                            HabitCard(
-                                habit = habit,
-                                viewModel = viewModel,
-                                onLongPress = { viewModel.showEditDialog(habit) },
-                                onDoubleClick = { viewModel.showEditDialog(habit) },
-                                modifier = Modifier.animateItemPlacement()
-                            )
+                    // Horizontal Calendar
+                    HorizontalCalendar(
+                        habits = habits,
+                        selectedDate = selectedDate,
+                        onDateSelected = { date -> viewModel.updateSelectedDate(date) },
+                        modifier = Modifier.padding(vertical = 1.dp)
+                    )
+
+                    // Habit Progress Bar
+                    ExpandableHabitProgressBar(
+                        habits = habits,
+                        modifier = Modifier.padding(vertical = 1.dp)
+                    )
+
+                    // My Habits title
+                    Text(
+                        text = "My Habits",
+                        style = MaterialTheme.typography.headlineMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = timeBasedColors.textPrimaryColor,
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 1.dp)
+                    )
+
+                    // Habits List
+                    LazyColumn(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(horizontal = 16.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp),
+                        contentPadding = PaddingValues(vertical = 16.dp)
+                    ) {
+                        if (habits.isEmpty()) {
+                            item {
+                                EmptyStateCard()
+                            }
+                        } else {
+                            items(habits, key = { habit -> habit.id }) { habit ->
+                                HabitCard(
+                                    habit = habit,
+                                    viewModel = viewModel,
+                                    selectedDate = selectedDate,
+                                    onLongPress = { viewModel.showEditDialog(habit) },
+                                    onDoubleClick = { viewModel.showEditDialog(habit) },
+                                    modifier = Modifier.animateItemPlacement()
+                                )
+                            }
                         }
                     }
                 }
-            }
-        }
 
-        // Show the habit dialog when needed
-        if (showDialog) {
-            AddEditHabitDialog(
-                habitViewModel = viewModel,
-                habit = selectedHabit,
-                onDismiss = { viewModel.hideDialog() }
-            )
+                // Show the habit dialog when needed
+                if (showDialog) {
+                    AddEditHabitDialog(
+                        habitViewModel = viewModel,
+                        habit = selectedHabit,
+                        onDismiss = { viewModel.hideDialog() }
+                    )
+                }
+            }
         }
     }
 }
@@ -437,14 +522,14 @@ fun HabitDashboardScreen(
 fun HabitCard(
     habit: Habit,
     viewModel: HabitViewModel,
+    selectedDate: Date,
     onLongPress: () -> Unit,
     onDoubleClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val today = Date()
-    val isCompleted = remember(habit.completedDates) {
+    val isCompleted = remember(habit.completedDates, selectedDate) {
         habit.completedDates.any { completedDate ->
-            isSameDay(completedDate, today.time)
+            isSameDay(completedDate, selectedDate.time)
         }
     }
     val timeBasedColors = LocalTimeBasedColors.current
@@ -593,9 +678,9 @@ fun HabitCard(
                 IconButton(
                     onClick = {
                         if (isCompleted) {
-                            viewModel.undoHabitCompletion(habit)
+                            viewModel.undoHabitCompletionForSelectedDate(habit)
                         } else {
-                            viewModel.markHabitAsCompleted(habit, today.time)
+                            viewModel.markHabitAsCompletedForSelectedDate(habit)
                         }
                     },
                     modifier = Modifier
@@ -773,5 +858,198 @@ fun EmptyStateCard() {
                 textAlign = TextAlign.Center
             )
         }
+    }
+}
+
+@Composable
+fun NavigationDrawerContent(
+    timeBasedColors: TimeBasedColors,
+    onCloseDrawer: () -> Unit
+) {
+    ModalDrawerSheet(
+        modifier = Modifier.width(300.dp),
+        drawerContainerColor = timeBasedColors.cardBackgroundColor,
+        drawerContentColor = timeBasedColors.textPrimaryColor
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(16.dp)
+        ) {
+            // Profile Header
+            ProfileHeader(timeBasedColors = timeBasedColors)
+
+            HorizontalDivider(
+                modifier = Modifier.padding(vertical = 16.dp),
+                color = timeBasedColors.textSecondaryColor.copy(alpha = 0.3f)
+            )
+
+            // Menu Items
+            DrawerMenuItem(
+                icon = Icons.Default.Person,
+                title = "Profile",
+                timeBasedColors = timeBasedColors,
+                onClick = {
+                    // Handle profile navigation
+                    onCloseDrawer()
+                }
+            )
+
+            DrawerMenuItem(
+                icon = Icons.Default.AccountCircle,
+                title = "Account",
+                timeBasedColors = timeBasedColors,
+                onClick = {
+                    // Handle account navigation
+                    onCloseDrawer()
+                }
+            )
+
+            DrawerMenuItem(
+                icon = Icons.Default.Assessment,
+                title = "Statistics",
+                timeBasedColors = timeBasedColors,
+                onClick = {
+                    // Handle statistics navigation
+                    onCloseDrawer()
+                }
+            )
+
+            DrawerMenuItem(
+                icon = Icons.Default.Notifications,
+                title = "Notifications",
+                timeBasedColors = timeBasedColors,
+                onClick = {
+                    // Handle notifications navigation
+                    onCloseDrawer()
+                }
+            )
+
+            DrawerMenuItem(
+                icon = Icons.Default.Settings,
+                title = "Settings",
+                timeBasedColors = timeBasedColors,
+                onClick = {
+                    // Handle settings navigation
+                    onCloseDrawer()
+                }
+            )
+
+            DrawerMenuItem(
+                icon = Icons.Default.Help,
+                title = "Help & Support",
+                timeBasedColors = timeBasedColors,
+                onClick = {
+                    // Handle help navigation
+                    onCloseDrawer()
+                }
+            )
+
+            DrawerMenuItem(
+                icon = Icons.Default.Info,
+                title = "About",
+                timeBasedColors = timeBasedColors,
+                onClick = {
+                    // Handle about navigation
+                    onCloseDrawer()
+                }
+            )
+
+            Spacer(modifier = Modifier.weight(1f))
+
+            HorizontalDivider(
+                modifier = Modifier.padding(vertical = 16.dp),
+                color = timeBasedColors.textSecondaryColor.copy(alpha = 0.3f)
+            )
+
+            // Logout
+            DrawerMenuItem(
+                icon = Icons.Default.ExitToApp,
+                title = "Logout",
+                timeBasedColors = timeBasedColors,
+                isDestructive = true,
+                onClick = {
+                    // Handle logout
+                    onCloseDrawer()
+                }
+            )
+        }
+    }
+}
+
+@Composable
+fun ProfileHeader(timeBasedColors: TimeBasedColors) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 16.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        // Profile Picture
+        Box(
+            modifier = Modifier
+                .size(80.dp)
+                .clip(CircleShape)
+                .background(timeBasedColors.cardContentColor),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = Icons.Default.Person,
+                contentDescription = "Profile Picture",
+                tint = Color.White,
+                modifier = Modifier.size(40.dp)
+            )
+        }
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        // User Name
+        Text(
+            text = "John Doe",
+            style = MaterialTheme.typography.titleLarge,
+            fontWeight = FontWeight.Bold,
+            color = timeBasedColors.textPrimaryColor
+        )
+
+        // User Email
+        Text(
+            text = "john.doe@example.com",
+            style = MaterialTheme.typography.bodyMedium,
+            color = timeBasedColors.textSecondaryColor
+        )
+    }
+}
+
+@Composable
+fun DrawerMenuItem(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    title: String,
+    timeBasedColors: TimeBasedColors,
+    isDestructive: Boolean = false,
+    onClick: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(12.dp))
+            .clickable { onClick() }
+            .padding(horizontal = 12.dp, vertical = 16.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = title,
+            tint = if (isDestructive) Color(0xFFE53E3E) else timeBasedColors.cardContentColor,
+            modifier = Modifier.size(24.dp)
+        )
+
+        Spacer(modifier = Modifier.width(16.dp))
+
+        Text(
+            text = title,
+            style = MaterialTheme.typography.bodyLarge,
+            color = if (isDestructive) Color(0xFFE53E3E) else timeBasedColors.textPrimaryColor,
+            fontWeight = FontWeight.Medium
+        )
     }
 }
