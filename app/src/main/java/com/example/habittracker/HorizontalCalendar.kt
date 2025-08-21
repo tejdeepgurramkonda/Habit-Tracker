@@ -85,6 +85,7 @@ private fun CalendarDateItem(
     onClick: () -> Unit
 ) {
     val timeBasedColors = LocalTimeBasedColors.current
+    val dimensions = LocalResponsiveDimensions.current
     val calendar = Calendar.getInstance().apply { time = date }
     val dayOfMonth = calendar.get(Calendar.DAY_OF_MONTH)
     val dayOfWeek = SimpleDateFormat("EEE", Locale.getDefault()).format(date).uppercase()
@@ -99,10 +100,13 @@ private fun CalendarDateItem(
     // Determine if this is a future date
     val isFuture = date.after(Date())
 
-    Box(
+    Column(
         modifier = Modifier
-            .size(width = 48.dp, height = 70.dp)
-            .clip(RoundedCornerShape(24.dp))
+            .size(
+                width = dimensions.calendarItemSize,
+                height = dimensions.calendarItemSize + dimensions.spacingLarge
+            )
+            .clip(RoundedCornerShape(dimensions.cardCornerRadius))
             .background(
                 when {
                     isSelected -> timeBasedColors.cardContentColor
@@ -111,51 +115,54 @@ private fun CalendarDateItem(
                 }
             )
             .clickable { onClick() }
-            .padding(4.dp),
-        contentAlignment = Alignment.Center
+            .padding(dimensions.spacingSmall),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
     ) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
+        Text(
+            text = dayOfWeek,
+            style = MaterialTheme.typography.labelSmall.copy(
+                fontSize = MaterialTheme.typography.labelSmall.fontSize * dimensions.captionTextScale
+            ),
+            color = when {
+                isSelected -> Color.White
+                isFuture -> timeBasedColors.textSecondaryColor.copy(alpha = 0.5f)
+                hasCompletedHabits -> timeBasedColors.textPrimaryColor.copy(alpha = 0.6f)
+                else -> timeBasedColors.textSecondaryColor
+            },
+            textAlign = TextAlign.Center,
+            fontWeight = if (isToday) FontWeight.Bold else FontWeight.Normal
+        )
+
+        Spacer(modifier = Modifier.height(dimensions.spacingXSmall))
+
+        Box(
+            modifier = Modifier
+                .size(dimensions.calendarItemSize - dimensions.spacingMedium)
+                .clip(RoundedCornerShape(50))
+                .background(
+                    when {
+                        isSelected -> Color.White.copy(alpha = 0.2f)
+                        isToday -> timeBasedColors.cardContentColor.copy(alpha = 0.1f)
+                        else -> Color.Transparent
+                    }
+                ),
+            contentAlignment = Alignment.Center
         ) {
             Text(
-                text = dayOfWeek,
-                style = MaterialTheme.typography.bodySmall,
-                color = when {
-                    isSelected -> Color.White
-                    hasCompletedHabits && !isFuture -> timeBasedColors.textSecondaryColor.copy(alpha = 0.6f)
-                    else -> timeBasedColors.textSecondaryColor
-                },
-                fontSize = 10.sp,
-                fontWeight = FontWeight.Medium
-            )
-
-            Spacer(modifier = Modifier.height(4.dp))
-
-            Text(
                 text = dayOfMonth.toString(),
-                style = MaterialTheme.typography.titleMedium,
+                style = MaterialTheme.typography.bodyMedium.copy(
+                    fontSize = MaterialTheme.typography.bodyMedium.fontSize * dimensions.bodyTextScale
+                ),
                 color = when {
                     isSelected -> Color.White
-                    hasCompletedHabits && !isFuture -> timeBasedColors.textPrimaryColor.copy(alpha = 0.6f)
+                    isFuture -> timeBasedColors.textPrimaryColor.copy(alpha = 0.5f)
+                    hasCompletedHabits -> timeBasedColors.textPrimaryColor.copy(alpha = 0.6f)
                     else -> timeBasedColors.textPrimaryColor
                 },
                 fontWeight = if (isToday) FontWeight.Bold else FontWeight.Medium,
                 textAlign = TextAlign.Center
             )
-
-            // Completion indicator
-            if (hasCompletedHabits && !isFuture) {
-                Spacer(modifier = Modifier.height(2.dp))
-                Box(
-                    modifier = Modifier
-                        .size(4.dp)
-                        .background(
-                            if (isSelected) Color.White else timeBasedColors.cardContentColor,
-                            RoundedCornerShape(2.dp)
-                        )
-                )
-            }
         }
     }
 }

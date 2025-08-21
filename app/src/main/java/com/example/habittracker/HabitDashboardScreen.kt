@@ -63,6 +63,7 @@ fun ExpandableHabitProgressBar(
     modifier: Modifier = Modifier
 ) {
     val timeBasedColors = LocalTimeBasedColors.current
+    val dimensions = LocalResponsiveDimensions.current
     var isExpanded by remember { mutableStateOf(false) }
 
     // Calculate today's habit completion stats
@@ -90,7 +91,7 @@ fun ExpandableHabitProgressBar(
 
     // Animation for expansion
     val expandedHeight by animateDpAsState(
-        targetValue = if (isExpanded) 280.dp else 80.dp,
+        targetValue = if (isExpanded) dimensions.progressExpandedHeight else dimensions.progressCollapsedHeight,
         animationSpec = spring(
             dampingRatio = Spring.DampingRatioLowBouncy,
             stiffness = Spring.StiffnessLow
@@ -108,10 +109,10 @@ fun ExpandableHabitProgressBar(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(20.dp),
+                .padding(dimensions.spacingLarge),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Spacer(modifier = Modifier.height(0.5.dp))
+            Spacer(modifier = Modifier.height(dimensions.spacingXSmall))
 
             // Show horizontal progress bar
             AnimatedVisibility(
@@ -127,37 +128,41 @@ fun ExpandableHabitProgressBar(
                     ) {
                         Text(
                             text = "${todaysStats.completedHabits}/${todaysStats.totalHabits}",
-                            style = MaterialTheme.typography.bodyLarge,
+                            style = MaterialTheme.typography.bodyLarge.copy(
+                                fontSize = MaterialTheme.typography.bodyLarge.fontSize * dimensions.bodyTextScale
+                            ),
                             fontWeight = FontWeight.Bold,
                             color = timeBasedColors.textPrimaryColor
                         )
                         Text(
                             text = "${(animatedProgress * 100).toInt()}%",
-                            style = MaterialTheme.typography.bodyLarge,
+                            style = MaterialTheme.typography.bodyLarge.copy(
+                                fontSize = MaterialTheme.typography.bodyLarge.fontSize * dimensions.bodyTextScale
+                            ),
                             fontWeight = FontWeight.Bold,
                             color = timeBasedColors.cardContentColor
                         )
                     }
 
-                    Spacer(modifier = Modifier.height(8.dp))
+                    Spacer(modifier = Modifier.height(dimensions.spacingMedium))
 
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(10.dp)
-                            .clip(RoundedCornerShape(6.dp))
+                            .height(dimensions.progressBarHeight)
+                            .clip(RoundedCornerShape(dimensions.progressBarRadius))
                             .background(timeBasedColors.textSecondaryColor.copy(alpha = 0.3f))
                     ) {
                         Box(
                             modifier = Modifier
                                 .fillMaxHeight()
                                 .fillMaxWidth(if (habits.isEmpty()) 0.2f else animatedProgress)
-                                .clip(RoundedCornerShape(6.dp))
+                                .clip(RoundedCornerShape(dimensions.progressBarRadius))
                                 .background(timeBasedColors.cardContentColor)
                         )
                     }
 
-                    Spacer(modifier = Modifier.height(8.dp))
+                    Spacer(modifier = Modifier.height(dimensions.spacingMedium))
                 }
             }
 
@@ -180,19 +185,21 @@ fun ExpandableHabitProgressBar(
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Spacer(modifier = Modifier.height(20.dp))
+                    Spacer(modifier = Modifier.height(dimensions.spacingLarge))
 
                     Text(
                         text = "Today's Progress",
-                        style = MaterialTheme.typography.titleLarge,
+                        style = MaterialTheme.typography.titleLarge.copy(
+                            fontSize = MaterialTheme.typography.titleLarge.fontSize * dimensions.titleTextScale
+                        ),
                         fontWeight = FontWeight.Bold,
                         color = timeBasedColors.textPrimaryColor
                     )
 
-                    Spacer(modifier = Modifier.height(8.dp))
+                    Spacer(modifier = Modifier.height(dimensions.spacingMedium))
 
                     Box(
-                        modifier = Modifier.size(120.dp),
+                        modifier = Modifier.size(dimensions.circularProgressSize),
                         contentAlignment = Alignment.Center
                     ) {
                         Canvas(
@@ -201,50 +208,43 @@ fun ExpandableHabitProgressBar(
                             drawCircularProgress(
                                 progress = circularAnimatedProgress,
                                 color = timeBasedColors.cardContentColor,
-                                backgroundColor = timeBasedColors.textSecondaryColor.copy(alpha = 0.3f)
+                                strokeWidth = dimensions.spacingMedium.toPx()
                             )
                         }
 
-                        Column(
-                            horizontalAlignment = Alignment.CenterHorizontally
-                        ) {
-                            Text(
-                                text = "${(circularAnimatedProgress * 100).toInt()}%",
-                                style = MaterialTheme.typography.headlineMedium,
-                                fontWeight = FontWeight.Bold,
-                                color = timeBasedColors.textPrimaryColor
-                            )
-                            Text(
-                                text = "Complete",
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = timeBasedColors.textSecondaryColor,
-                                fontSize = 14.sp
-                            )
-                        }
+                        Text(
+                            text = "${(circularAnimatedProgress * 100).toInt()}%",
+                            style = MaterialTheme.typography.headlineMedium.copy(
+                                fontSize = MaterialTheme.typography.headlineMedium.fontSize * dimensions.titleTextScale
+                            ),
+                            fontWeight = FontWeight.Bold,
+                            color = timeBasedColors.textPrimaryColor
+                        )
                     }
 
-                    Spacer(modifier = Modifier.height(16.dp))
+                    Spacer(modifier = Modifier.height(dimensions.spacingLarge))
 
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceEvenly
                     ) {
-                        StatItem(
-                            value = todaysStats.completedHabits.toString(),
+                        StatisticItem(
                             label = "Completed",
-                            color = Color(0xFF4CAF50)
+                            value = todaysStats.completedHabits.toString(),
+                            color = timeBasedColors.cardContentColor,
+                            dimensions = dimensions
                         )
-
-                        StatItem(
-                            value = todaysStats.totalHabits.toString(),
+                        StatisticItem(
                             label = "Total",
-                            color = Color(0xFF2196F3)
+                            value = todaysStats.totalHabits.toString(),
+                            color = timeBasedColors.textPrimaryColor,
+                            dimensions = dimensions
                         )
-
-                        StatItem(
-                            value = todaysStats.remainingHabits.toString(),
+                        StatisticItem(
                             label = "Remaining",
-                            color = Color(0xFFFF9800)
+                            value = todaysStats.remainingHabits.toString(),
+                            color = timeBasedColors.textSecondaryColor,
+                            dimensions = dimensions
                         )
                     }
                 }
@@ -254,25 +254,29 @@ fun ExpandableHabitProgressBar(
 }
 
 @Composable
-private fun StatItem(
-    value: String,
+private fun StatisticItem(
     label: String,
-    color: Color
+    value: String,
+    color: Color,
+    dimensions: ResponsiveDimensions
 ) {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Text(
             text = value,
-            style = MaterialTheme.typography.titleLarge,
+            style = MaterialTheme.typography.headlineSmall.copy(
+                fontSize = MaterialTheme.typography.headlineSmall.fontSize * dimensions.titleTextScale
+            ),
             fontWeight = FontWeight.Bold,
             color = color
         )
         Text(
             text = label,
-            style = MaterialTheme.typography.bodySmall,
-            color = color.copy(alpha = 0.8f),
-            fontSize = 12.sp
+            style = MaterialTheme.typography.bodyMedium.copy(
+                fontSize = MaterialTheme.typography.bodyMedium.fontSize * dimensions.captionTextScale
+            ),
+            color = color.copy(alpha = 0.7f)
         )
     }
 }
@@ -280,11 +284,11 @@ private fun StatItem(
 private fun DrawScope.drawCircularProgress(
     progress: Float,
     color: Color,
-    backgroundColor: Color,
     strokeWidth: Float = 12.dp.toPx()
 ) {
     val center = Offset(size.width / 2, size.height / 2)
     val radius = (size.minDimension - strokeWidth) / 2
+    val backgroundColor = color.copy(alpha = 0.1f)
 
     drawCircle(
         color = backgroundColor,
@@ -358,21 +362,29 @@ private fun isSameDay(timestamp1: Long, timestamp2: Long): Boolean {
 @OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3Api::class)
 @Composable
 fun HabitDashboardScreen(
-    navController: NavController,
-    viewModel: HabitViewModel = hiltViewModel()
+    habitViewModel: HabitViewModel = hiltViewModel()
 ) {
-    val habits by viewModel.habits.collectAsState()
-    val showDialog by viewModel.showDialog.collectAsState()
-    val selectedHabit by viewModel.selectedHabit.collectAsState()
-    val selectedDate by viewModel.selectedDate.collectAsState()
+    val dimensions = LocalResponsiveDimensions.current
+    val habits by habitViewModel.habits.collectAsState()
+    val showDialog by habitViewModel.showDialog.collectAsState()
+    val selectedHabit by habitViewModel.selectedHabit.collectAsState()
+    val selectedDate by habitViewModel.selectedDate.collectAsState()
 
-    val drawerState = rememberDrawerState(DrawerValue.Closed)
     val scope = rememberCoroutineScope()
+    val drawerState = rememberDrawerState(DrawerValue.Closed)
+
+    // State for monthly calendar popup
+    var showMonthlyCalendar by remember { mutableStateOf(false) }
 
     // Get current month and year
     val currentMonthYear = remember {
         val formatter = SimpleDateFormat("MMMM yyyy", Locale.getDefault())
         formatter.format(Date())
+    }
+
+    // Calculate current streak
+    val currentStreak = remember(habits) {
+        calculateMainStreak(habits)
     }
 
     DynamicGradientBackground {
@@ -403,15 +415,54 @@ fun HabitDashboardScreen(
                                     text = "Today",
                                     color = timeBasedColors.textPrimaryColor,
                                     fontWeight = FontWeight.Bold,
-                                    style = MaterialTheme.typography.titleLarge
+                                    style = MaterialTheme.typography.titleLarge.copy(
+                                        fontSize = MaterialTheme.typography.titleLarge.fontSize * dimensions.titleTextScale
+                                    )
                                 )
 
+                                // Streak Display in Center
+                                Column(
+                                    horizontalAlignment = Alignment.CenterHorizontally
+                                ) {
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(dimensions.spacingSmall)
+                                    ) {
+                                        Text(
+                                            text = "🔥",
+                                            style = MaterialTheme.typography.titleMedium.copy(
+                                                fontSize = MaterialTheme.typography.titleMedium.fontSize * dimensions.titleTextScale
+                                            )
+                                        )
+                                        Text(
+                                            text = currentStreak.toString(),
+                                            color = timeBasedColors.cardContentColor,
+                                            fontWeight = FontWeight.Bold,
+                                            style = MaterialTheme.typography.titleLarge.copy(
+                                                fontSize = MaterialTheme.typography.titleLarge.fontSize * dimensions.titleTextScale
+                                            )
+                                        )
+                                    }
+                                    Text(
+                                        text = if (currentStreak == 1) "day streak" else "days streak",
+                                        color = timeBasedColors.textSecondaryColor,
+                                        style = MaterialTheme.typography.bodySmall.copy(
+                                            fontSize = MaterialTheme.typography.bodySmall.fontSize * dimensions.captionTextScale
+                                        )
+                                    )
+                                }
+
+                                // Month/Year aligned to the right
                                 Text(
                                     text = currentMonthYear,
                                     color = timeBasedColors.textPrimaryColor,
                                     fontWeight = FontWeight.Medium,
-                                    style = MaterialTheme.typography.titleMedium,
-                                    modifier = Modifier.padding(end = 48.dp) // Account for menu icon space
+                                    style = MaterialTheme.typography.titleMedium.copy(
+                                        fontSize = MaterialTheme.typography.titleMedium.fontSize * dimensions.titleTextScale
+                                    ),
+                                    modifier = Modifier
+                                        .clickable { showMonthlyCalendar = true }
+                                        .padding(horizontal = dimensions.spacingMedium, vertical = dimensions.spacingSmall)
                                 )
                             }
                         },
@@ -419,71 +470,62 @@ fun HabitDashboardScreen(
                             IconButton(
                                 onClick = {
                                     scope.launch { drawerState.open() }
-                                }
+                                },
+                                modifier = Modifier.size(dimensions.iconButtonSize)
                             ) {
                                 Icon(
                                     imageVector = Icons.Default.Menu,
                                     contentDescription = "Open Menu",
-                                    tint = timeBasedColors.textPrimaryColor
+                                    tint = timeBasedColors.textPrimaryColor,
+                                    modifier = Modifier.size(dimensions.iconSize)
                                 )
                             }
                         },
                         colors = TopAppBarDefaults.topAppBarColors(
                             containerColor = Color.Transparent
-                        )
+                        ),
+                        windowInsets = WindowInsets(0, 0, 0, 0) // Remove default window insets
                     )
-                },
-                floatingActionButton = {
-                    FloatingActionButton(
-                        onClick = { viewModel.showAddDialog() },
-                        containerColor = timeBasedColors.cardContentColor,
-                        contentColor = Color.White,
-                        modifier = Modifier.shadow(8.dp, CircleShape)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Add,
-                            contentDescription = "Add Habit",
-                            tint = Color.White
-                        )
-                    }
                 }
             ) { paddingValues ->
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(paddingValues)
-                        .padding(top = 8.dp)
+                        .padding(top = dimensions.spacingMedium)
                 ) {
                     // Horizontal Calendar
                     HorizontalCalendar(
                         habits = habits,
                         selectedDate = selectedDate,
-                        onDateSelected = { date -> viewModel.updateSelectedDate(date) },
-                        modifier = Modifier.padding(vertical = 1.dp)
+                        onDateSelected = { date -> habitViewModel.updateSelectedDate(date) },
+                        modifier = Modifier.padding(vertical = dimensions.spacingXSmall)
                     )
 
                     // Habit Progress Bar
                     ExpandableHabitProgressBar(
                         habits = habits,
-                        modifier = Modifier.padding(vertical = 1.dp)
+                        modifier = Modifier.padding(vertical = dimensions.spacingXSmall)
                     )
 
                     // My Habits title
                     Text(
                         text = "My Habits",
-                        style = MaterialTheme.typography.headlineMedium,
+                        style = MaterialTheme.typography.headlineMedium.copy(
+                            fontSize = MaterialTheme.typography.headlineMedium.fontSize * dimensions.titleTextScale
+                        ),
                         fontWeight = FontWeight.Bold,
                         color = timeBasedColors.textPrimaryColor,
-                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 1.dp)
+                        modifier = Modifier.padding(horizontal = dimensions.spacingLarge, vertical = dimensions.spacingXSmall)
                     )
 
                     // Habits List
                     LazyColumn(
                         modifier = Modifier
                             .fillMaxSize()
-                            .padding(horizontal = 16.dp),
-                        verticalArrangement = Arrangement.spacedBy(12.dp),
-                        contentPadding = PaddingValues(vertical = 16.dp)
+                            .padding(horizontal = dimensions.spacingLarge),
+                        verticalArrangement = Arrangement.spacedBy(dimensions.spacingMedium),
+                        contentPadding = PaddingValues(vertical = dimensions.spacingLarge)
                     ) {
                         if (habits.isEmpty()) {
                             item {
@@ -493,10 +535,10 @@ fun HabitDashboardScreen(
                             items(habits, key = { habit -> habit.id }) { habit ->
                                 HabitCard(
                                     habit = habit,
-                                    viewModel = viewModel,
+                                    viewModel = habitViewModel,
                                     selectedDate = selectedDate,
-                                    onLongPress = { viewModel.showEditDialog(habit) },
-                                    onDoubleClick = { viewModel.showEditDialog(habit) },
+                                    onLongPress = { habitViewModel.showEditDialog(habit) },
+                                    onDoubleClick = { habitViewModel.showEditDialog(habit) },
                                     modifier = Modifier.animateItemPlacement()
                                 )
                             }
@@ -507,9 +549,19 @@ fun HabitDashboardScreen(
                 // Show the habit dialog when needed
                 if (showDialog) {
                     AddEditHabitDialog(
-                        habitViewModel = viewModel,
+                        habitViewModel = habitViewModel,
                         habit = selectedHabit,
-                        onDismiss = { viewModel.hideDialog() }
+                        onDismiss = { habitViewModel.hideDialog() }
+                    )
+                }
+
+                // Show monthly calendar popup when needed
+                if (showMonthlyCalendar) {
+                    MonthlyCalendarPopup(
+                        selectedDate = selectedDate,
+                        onDateSelected = { date -> habitViewModel.updateSelectedDate(date) },
+                        onDismiss = { showMonthlyCalendar = false },
+                        habits = habits
                     )
                 }
             }
@@ -1052,4 +1104,35 @@ fun DrawerMenuItem(
             fontWeight = FontWeight.Medium
         )
     }
+}
+
+private fun calculateMainStreak(habits: List<Habit>): Int {
+    if (habits.isEmpty()) return 0
+
+    val today = Calendar.getInstance()
+    var currentStreak = 0
+    var checkDate = Calendar.getInstance()
+
+    // Start from yesterday and work backwards
+    checkDate.add(Calendar.DAY_OF_YEAR, -1)
+
+    while (true) {
+        val dateToCheck = checkDate.time
+
+        // Check if ALL habits were completed on this date
+        val allHabitsCompleted = habits.all { habit ->
+            habit.completedDates.any { completedDate ->
+                isSameDay(completedDate, dateToCheck.time)
+            }
+        }
+
+        if (allHabitsCompleted) {
+            currentStreak++
+            checkDate.add(Calendar.DAY_OF_YEAR, -1)
+        } else {
+            break
+        }
+    }
+
+    return currentStreak
 }

@@ -17,6 +17,9 @@ class Converters {
     @TypeConverter
     fun toIntList(value: String): List<Int> {
         return try {
+            // Handle empty or null strings
+            if (value.isBlank()) return emptyList()
+
             // First try to parse as a JSON array
             val listType = object : TypeToken<List<Int>>() {}.type
             gson.fromJson(value, listType) ?: emptyList()
@@ -30,10 +33,11 @@ class Converters {
                     // If all else fails, return empty list
                     emptyList()
                 }
-            } catch (e: NumberFormatException) {
-                // Return empty list as fallback
+            } catch (e: Exception) {
                 emptyList()
             }
+        } catch (e: Exception) {
+            emptyList()
         }
     }
 
@@ -46,12 +50,15 @@ class Converters {
     @TypeConverter
     fun toLongList(value: String): List<Long> {
         return try {
-            // Try to parse as a JSON array of longs
+            // Handle empty or null strings
+            if (value.isBlank()) return emptyList()
+
+            // First try to parse as a JSON array
             val listType = object : TypeToken<List<Long>>() {}.type
             gson.fromJson(value, listType) ?: emptyList()
         } catch (e: JsonSyntaxException) {
             try {
-                // If that fails, try to parse as a single long and convert to list
+                // If that fails, try to parse as a single number and convert to list
                 val singleValue = value.toLongOrNull()
                 if (singleValue != null) {
                     listOf(singleValue)
@@ -59,10 +66,11 @@ class Converters {
                     // If all else fails, return empty list
                     emptyList()
                 }
-            } catch (e: NumberFormatException) {
-                // Return empty list as fallback
+            } catch (e: Exception) {
                 emptyList()
             }
+        } catch (e: Exception) {
+            emptyList()
         }
     }
 }

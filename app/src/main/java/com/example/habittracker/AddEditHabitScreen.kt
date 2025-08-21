@@ -27,6 +27,7 @@ fun AddEditHabitDialog(
     habit: Habit? = null,
     onDismiss: () -> Unit
 ) {
+    val dimensions = LocalResponsiveDimensions.current
     var name by remember { mutableStateOf(habit?.name ?: "") }
     var selectedColor by remember { mutableStateOf(habit?.colorHex ?: "#FF5733") }
     var selectedFrequency by remember { mutableStateOf(habit?.frequencyType ?: "DAILY") }
@@ -49,14 +50,14 @@ fun AddEditHabitDialog(
             modifier = Modifier
                 .fillMaxWidth(0.9f)
                 .wrapContentHeight(),
-            shape = RoundedCornerShape(16.dp),
+            shape = RoundedCornerShape(dimensions.cardCornerRadius),
             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
         ) {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(24.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
+                    .padding(dimensions.spacingXLarge),
+                verticalArrangement = Arrangement.spacedBy(dimensions.spacingLarge)
             ) {
                 // Header
                 Row(
@@ -66,13 +67,19 @@ fun AddEditHabitDialog(
                 ) {
                     Text(
                         text = if (habit == null) "Add Habit" else "Edit Habit",
-                        style = MaterialTheme.typography.headlineSmall,
+                        style = MaterialTheme.typography.headlineSmall.copy(
+                            fontSize = MaterialTheme.typography.headlineSmall.fontSize * dimensions.titleTextScale
+                        ),
                         fontWeight = FontWeight.Bold
                     )
-                    IconButton(onClick = onDismiss) {
+                    IconButton(
+                        onClick = onDismiss,
+                        modifier = Modifier.size(dimensions.iconButtonSize)
+                    ) {
                         Icon(
                             imageVector = Icons.Default.Close,
-                            contentDescription = "Close"
+                            contentDescription = "Close",
+                            modifier = Modifier.size(dimensions.iconSize)
                         )
                     }
                 }
@@ -81,60 +88,99 @@ fun AddEditHabitDialog(
                 OutlinedTextField(
                     value = name,
                     onValueChange = { name = it },
-                    label = { Text("Habit Name") },
+                    label = {
+                        Text(
+                            "Habit Name",
+                            style = MaterialTheme.typography.bodyMedium.copy(
+                                fontSize = MaterialTheme.typography.bodyMedium.fontSize * dimensions.bodyTextScale
+                            )
+                        )
+                    },
                     modifier = Modifier.fillMaxWidth(),
-                    singleLine = true
+                    singleLine = true,
+                    textStyle = MaterialTheme.typography.bodyLarge.copy(
+                        fontSize = MaterialTheme.typography.bodyLarge.fontSize * dimensions.bodyTextScale
+                    )
                 )
 
                 // Icon Selection
                 Text(
                     text = "Select Icon",
-                    style = MaterialTheme.typography.titleMedium,
+                    style = MaterialTheme.typography.titleMedium.copy(
+                        fontSize = MaterialTheme.typography.titleMedium.fontSize * dimensions.titleTextScale
+                    ),
                     fontWeight = FontWeight.Medium
                 )
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+
+                // Icons in two rows for better responsiveness
+                Column(
+                    verticalArrangement = Arrangement.spacedBy(dimensions.spacingMedium)
                 ) {
-                    icons.take(5).forEach { icon ->
-                        Box(
-                            modifier = Modifier
-                                .size(48.dp)
-                                .clip(CircleShape)
-                                .background(
-                                    if (selectedIcon == icon) MaterialTheme.colorScheme.primary
-                                    else MaterialTheme.colorScheme.surfaceVariant
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(dimensions.spacingMedium)
+                    ) {
+                        icons.take(5).forEach { icon ->
+                            Box(
+                                modifier = Modifier
+                                    .size(dimensions.iconButtonSize)
+                                    .clip(CircleShape)
+                                    .background(
+                                        if (selectedIcon == icon)
+                                            MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)
+                                        else
+                                            MaterialTheme.colorScheme.surfaceVariant
+                                    )
+                                    .border(
+                                        width = if (selectedIcon == icon) 2.dp else 0.dp,
+                                        color = MaterialTheme.colorScheme.primary,
+                                        shape = CircleShape
+                                    )
+                                    .clickable { selectedIcon = icon }
+                                    .weight(1f),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    text = icon,
+                                    style = MaterialTheme.typography.titleMedium.copy(
+                                        fontSize = MaterialTheme.typography.titleMedium.fontSize * dimensions.titleTextScale
+                                    )
                                 )
-                                .clickable { selectedIcon = icon },
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text(
-                                text = icon,
-                                style = MaterialTheme.typography.titleLarge
-                            )
+                            }
                         }
                     }
-                }
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    icons.drop(5).forEach { icon ->
-                        Box(
-                            modifier = Modifier
-                                .size(48.dp)
-                                .clip(CircleShape)
-                                .background(
-                                    if (selectedIcon == icon) MaterialTheme.colorScheme.primary
-                                    else MaterialTheme.colorScheme.surfaceVariant
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(dimensions.spacingMedium)
+                    ) {
+                        icons.drop(5).forEach { icon ->
+                            Box(
+                                modifier = Modifier
+                                    .size(dimensions.iconButtonSize)
+                                    .clip(CircleShape)
+                                    .background(
+                                        if (selectedIcon == icon)
+                                            MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)
+                                        else
+                                            MaterialTheme.colorScheme.surfaceVariant
+                                    )
+                                    .border(
+                                        width = if (selectedIcon == icon) 2.dp else 0.dp,
+                                        color = MaterialTheme.colorScheme.primary,
+                                        shape = CircleShape
+                                    )
+                                    .clickable { selectedIcon = icon }
+                                    .weight(1f),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    text = icon,
+                                    style = MaterialTheme.typography.titleMedium.copy(
+                                        fontSize = MaterialTheme.typography.titleMedium.fontSize * dimensions.titleTextScale
+                                    )
                                 )
-                                .clickable { selectedIcon = icon },
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text(
-                                text = icon,
-                                style = MaterialTheme.typography.titleLarge
-                            )
+                            }
                         }
                     }
                 }
@@ -142,63 +188,74 @@ fun AddEditHabitDialog(
                 // Color Selection
                 Text(
                     text = "Select Color",
-                    style = MaterialTheme.typography.titleMedium,
+                    style = MaterialTheme.typography.titleMedium.copy(
+                        fontSize = MaterialTheme.typography.titleMedium.fontSize * dimensions.titleTextScale
+                    ),
                     fontWeight = FontWeight.Medium
                 )
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+
+                // Colors in two rows for better responsiveness
+                Column(
+                    verticalArrangement = Arrangement.spacedBy(dimensions.spacingMedium)
                 ) {
-                    colors.take(5).forEach { color ->
-                        Box(
-                            modifier = Modifier
-                                .size(48.dp)
-                                .clip(CircleShape)
-                                .background(Color(android.graphics.Color.parseColor(color)))
-                                .border(
-                                    width = if (selectedColor == color) 3.dp else 0.dp,
-                                    color = MaterialTheme.colorScheme.primary,
-                                    shape = CircleShape
-                                )
-                                .clickable { selectedColor = color },
-                            contentAlignment = Alignment.Center
-                        ) {
-                            if (selectedColor == color) {
-                                Icon(
-                                    imageVector = Icons.Default.Check,
-                                    contentDescription = "Selected",
-                                    tint = Color.White,
-                                    modifier = Modifier.size(24.dp)
-                                )
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(dimensions.spacingMedium)
+                    ) {
+                        colors.take(5).forEach { color ->
+                            Box(
+                                modifier = Modifier
+                                    .size(dimensions.iconButtonSize)
+                                    .clip(CircleShape)
+                                    .background(Color(android.graphics.Color.parseColor(color)))
+                                    .border(
+                                        width = if (selectedColor == color) 3.dp else 0.dp,
+                                        color = MaterialTheme.colorScheme.outline,
+                                        shape = CircleShape
+                                    )
+                                    .clickable { selectedColor = color }
+                                    .weight(1f),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                if (selectedColor == color) {
+                                    Icon(
+                                        imageVector = Icons.Default.Check,
+                                        contentDescription = "Selected",
+                                        tint = Color.White,
+                                        modifier = Modifier.size(dimensions.iconSize)
+                                    )
+                                }
                             }
                         }
                     }
-                }
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    colors.drop(5).forEach { color ->
-                        Box(
-                            modifier = Modifier
-                                .size(48.dp)
-                                .clip(CircleShape)
-                                .background(Color(android.graphics.Color.parseColor(color)))
-                                .border(
-                                    width = if (selectedColor == color) 3.dp else 0.dp,
-                                    color = MaterialTheme.colorScheme.primary,
-                                    shape = CircleShape
-                                )
-                                .clickable { selectedColor = color },
-                            contentAlignment = Alignment.Center
-                        ) {
-                            if (selectedColor == color) {
-                                Icon(
-                                    imageVector = Icons.Default.Check,
-                                    contentDescription = "Selected",
-                                    tint = Color.White,
-                                    modifier = Modifier.size(24.dp)
-                                )
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(dimensions.spacingMedium)
+                    ) {
+                        colors.drop(5).forEach { color ->
+                            Box(
+                                modifier = Modifier
+                                    .size(dimensions.iconButtonSize)
+                                    .clip(CircleShape)
+                                    .background(Color(android.graphics.Color.parseColor(color)))
+                                    .border(
+                                        width = if (selectedColor == color) 3.dp else 0.dp,
+                                        color = MaterialTheme.colorScheme.outline,
+                                        shape = CircleShape
+                                    )
+                                    .clickable { selectedColor = color }
+                                    .weight(1f),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                if (selectedColor == color) {
+                                    Icon(
+                                        imageVector = Icons.Default.Check,
+                                        contentDescription = "Selected",
+                                        tint = Color.White,
+                                        modifier = Modifier.size(dimensions.iconSize)
+                                    )
+                                }
                             }
                         }
                     }
@@ -207,18 +264,28 @@ fun AddEditHabitDialog(
                 // Frequency Selection
                 Text(
                     text = "Frequency",
-                    style = MaterialTheme.typography.titleMedium,
+                    style = MaterialTheme.typography.titleMedium.copy(
+                        fontSize = MaterialTheme.typography.titleMedium.fontSize * dimensions.titleTextScale
+                    ),
                     fontWeight = FontWeight.Medium
                 )
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    horizontalArrangement = Arrangement.spacedBy(dimensions.spacingMedium)
                 ) {
                     frequencies.forEach { frequency ->
                         FilterChip(
                             onClick = { selectedFrequency = frequency },
-                            label = { Text(frequency) },
-                            selected = selectedFrequency == frequency
+                            label = {
+                                Text(
+                                    frequency,
+                                    style = MaterialTheme.typography.bodyMedium.copy(
+                                        fontSize = MaterialTheme.typography.bodyMedium.fontSize * dimensions.bodyTextScale
+                                    )
+                                )
+                            },
+                            selected = selectedFrequency == frequency,
+                            modifier = Modifier.weight(1f)
                         )
                     }
                 }
@@ -226,41 +293,39 @@ fun AddEditHabitDialog(
                 // Action Buttons
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    horizontalArrangement = Arrangement.spacedBy(dimensions.spacingMedium)
                 ) {
-                    if (habit != null) {
-                        OutlinedButton(
-                            onClick = {
-                                habitViewModel.deleteHabit(habit)
-                                onDismiss()
-                            },
-                            modifier = Modifier.weight(1f),
-                            colors = ButtonDefaults.outlinedButtonColors(
-                                contentColor = MaterialTheme.colorScheme.error
+                    OutlinedButton(
+                        onClick = onDismiss,
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Text(
+                            "Cancel",
+                            style = MaterialTheme.typography.bodyMedium.copy(
+                                fontSize = MaterialTheme.typography.bodyMedium.fontSize * dimensions.bodyTextScale
                             )
-                        ) {
-                            Text("Delete")
-                        }
+                        )
                     }
-
                     Button(
                         onClick = {
                             if (name.isNotBlank()) {
                                 val newHabit = if (habit == null) {
                                     Habit(
+                                        id = 0,
                                         name = name,
                                         iconId = selectedIcon,
                                         colorHex = selectedColor,
                                         frequencyType = selectedFrequency,
-                                        frequencyValue = if (selectedFrequency == "DAILY") emptyList() else listOf(1, 2, 3, 4, 5)
+                                        frequencyValue = emptyList(),
+                                        createdAt = System.currentTimeMillis(),
+                                        completedDates = emptyList()
                                     )
                                 } else {
                                     habit.copy(
                                         name = name,
                                         iconId = selectedIcon,
                                         colorHex = selectedColor,
-                                        frequencyType = selectedFrequency,
-                                        frequencyValue = if (selectedFrequency == "DAILY") emptyList() else listOf(1, 2, 3, 4, 5)
+                                        frequencyType = selectedFrequency
                                     )
                                 }
 
@@ -275,7 +340,12 @@ fun AddEditHabitDialog(
                         modifier = Modifier.weight(1f),
                         enabled = name.isNotBlank()
                     ) {
-                        Text("Save")
+                        Text(
+                            if (habit == null) "Add" else "Update",
+                            style = MaterialTheme.typography.bodyMedium.copy(
+                                fontSize = MaterialTheme.typography.bodyMedium.fontSize * dimensions.bodyTextScale
+                            )
+                        )
                     }
                 }
             }

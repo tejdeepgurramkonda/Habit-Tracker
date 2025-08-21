@@ -1,22 +1,41 @@
 package com.example.habittracker
 
-import androidx.compose.runtime.Composable
-import androidx.navigation.compose.NavHost
-import androidx.navigation.compose.composable
-import androidx.navigation.compose.rememberNavController
+import androidx.compose.foundation.layout.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.hilt.navigation.compose.hiltViewModel
 
 @Composable
 fun AppNavigation() {
-    val navController = rememberNavController()
+    var selectedTab by remember { mutableIntStateOf(0) }
+    val habitViewModel: HabitViewModel = hiltViewModel()
 
-    NavHost(
-        navController = navController,
-        startDestination = "dashboard"
-    ) {
-        composable("dashboard") {
-            HabitDashboardScreen(
-                navController = navController
-            )
+    // Wrap everything in DynamicGradientBackground to provide TimeBasedColors
+    DynamicGradientBackground {
+        Scaffold(
+            containerColor = Color.Transparent, // Make scaffold transparent to show gradient
+            bottomBar = {
+                NavigationFooterBar(
+                    selectedTab = selectedTab,
+                    onTabSelected = { selectedTab = it },
+                    onAddHabitClick = { habitViewModel.showAddDialog() }
+                )
+            }
+        ) { paddingValues ->
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues)
+            ) {
+                when (selectedTab) {
+                    0 -> HabitDashboardScreen(habitViewModel = habitViewModel)
+                    1 -> TimerScreen()
+                    2 -> StatisticsScreen()
+                    3 -> ProfileScreen()
+                }
+            }
         }
     }
 }
