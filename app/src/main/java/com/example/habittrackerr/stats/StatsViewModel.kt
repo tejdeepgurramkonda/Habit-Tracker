@@ -1,5 +1,6 @@
 package com.example.habittrackerr.stats
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.habittrackerr.data.analytics.AnalyticsRepository
@@ -91,11 +92,37 @@ class StatsViewModel @Inject constructor(
 
     fun refreshData() {
         viewModelScope.launch {
-            _summaryState.value = _summaryState.value.copy(isLoading = true)
-            _timelineState.value = _timelineState.value.copy(isLoading = true)
+            Log.d("StatsViewModel", "Starting manual refresh...")
 
-            syncFitnessData()
-            loadInitialData()
+            _summaryState.value = _summaryState.value.copy(isLoading = true, error = null)
+            _timelineState.value = _timelineState.value.copy(isLoading = true, error = null)
+
+            // Check permissions first
+            checkPermissions()
+            val currentPermissions = _permissionsState.value
+
+            Log.d("StatsViewModel", "Permission status: HealthConnect=${currentPermissions.healthConnectPermissions}, GoogleFit=${currentPermissions.googleFitPermissions}")
+
+            try {
+                // Attempt to sync fitness data
+                val syncResult = syncFitnessData()
+                Log.d("StatsViewModel", "Sync result: $syncResult")
+
+                // Reload all data
+                loadInitialData()
+
+                Log.d("StatsViewModel", "Refresh completed successfully")
+            } catch (e: Exception) {
+                Log.e("StatsViewModel", "Error during refresh", e)
+                _summaryState.value = _summaryState.value.copy(
+                    isLoading = false,
+                    error = "Failed to refresh data: ${e.message}"
+                )
+                _timelineState.value = _timelineState.value.copy(
+                    isLoading = false,
+                    error = "Failed to refresh data: ${e.message}"
+                )
+            }
         }
     }
 
@@ -235,24 +262,48 @@ class StatsViewModel @Inject constructor(
         _historyState.value = _historyState.value.copy(filter = filter)
     }
 
-    private suspend fun syncFitnessData() {
-        try {
+    private suspend fun syncFitnessData(): String {
+        return try {
             val today = LocalDate.now()
             val weekAgo = today.minusDays(7)
 
-            val fitnessData = if (_permissionsState.value.healthConnectPermissions) {
-                healthConnectRepository.getFitnessDataForRange(weekAgo, today)
-            } else if (_permissionsState.value.googleFitPermissions) {
-                googleFitRepository.getFitnessDataForRange(weekAgo, today)
-            } else {
-                emptyList()
-            }
+            val permissionsState = _permissionsState.value
 
-            if (fitnessData.isNotEmpty()) {
-                fitnessDataDao.insertFitnessData(fitnessData)
+            when {
+                permissionsState.healthConnectPermissions -> {
+                    Log.d("StatsViewModel", "Syncing from Health Connect...")
+                    val fitnessData = healthConnectRepository.getFitnessDataForRange(weekAgo, today)
+                    if (fitnessData.isNotEmpty()) {
+                        fitnessDataDao.insertFitnessData(fitnessData)
+                        Log.d("StatsViewModel", "Inserted ${fitnessData.size} Health Connect data points")
+                        "Synced ${fitnessData.size} data points from Health Connect"
+                    } else {
+                        Log.w("StatsViewModel", "No Health Connect data found")
+                        "No data found in Health Connect"
+                    }
+                }
+
+                permissionsState.googleFitPermissions -> {
+                    Log.d("StatsViewModel", "Syncing from Google Fit...")
+                    val fitnessData = googleFitRepository.getFitnessDataForRange(weekAgo, today)
+                    if (fitnessData.isNotEmpty()) {
+                        fitnessDataDao.insertFitnessData(fitnessData)
+                        Log.d("StatsViewModel", "Inserted ${fitnessData.size} Google Fit data points")
+                        "Synced ${fitnessData.size} data points from Google Fit"
+                    } else {
+                        Log.w("StatsViewModel", "No Google Fit data found")
+                        "No data found in Google Fit"
+                    }
+                }
+
+                else -> {
+                    Log.w("StatsViewModel", "No fitness permissions available")
+                    "No fitness data sources connected"
+                }
             }
         } catch (e: Exception) {
-            // Handle sync error gracefully
+            Log.e("StatsViewModel", "Error during fitness data sync", e)
+            throw e
         }
     }
 

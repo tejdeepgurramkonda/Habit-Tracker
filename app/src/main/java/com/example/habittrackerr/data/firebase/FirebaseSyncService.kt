@@ -32,7 +32,8 @@ class FirebaseSyncService @Inject constructor(
             Log.d(tag, "Starting sync of local habits to Firebase")
 
             // Ensure database access is on IO dispatcher
-            val localHabits = habitDao.getAllHabits().first()
+            val localHabitsFlow = habitDao.getAllHabits()
+            val localHabits = localHabitsFlow.first()
 
             if (localHabits.isEmpty()) {
                 Log.d(tag, "No local habits to sync")

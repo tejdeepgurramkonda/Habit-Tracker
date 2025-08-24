@@ -114,10 +114,17 @@ dependencies {
     // Essential Google Play Services dependencies (keep minimal for OnePlus compatibility)
     implementation("com.google.android.gms:play-services-auth:21.2.0") {
         exclude(group = "com.google.android.gms", module = "play-services-safetynet")
-        exclude(group = "com.google.android.gms", module = "play-services-auth-base")
     }
     implementation("com.google.android.gms:play-services-base:18.5.0")
     implementation("com.google.android.gms:play-services-tasks:18.2.0")
+
+    // Google Fit Integration (Fallback) - Fix missing AuthProxy
+    implementation("com.google.android.gms:play-services-fitness:21.1.0")
+    implementation("com.google.android.gms:play-services-auth-api-phone:18.1.0")
+
+    // Add missing core GMS dependencies for AuthProxy
+    implementation("com.google.android.gms:play-services-basement:18.4.0")
+    implementation("com.google.android.gms:play-services-auth-base:18.0.4")
 
     // Coroutines
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.1")

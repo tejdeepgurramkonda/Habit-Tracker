@@ -9,6 +9,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -31,6 +32,8 @@ fun StatisticsScreen(
 
     var showPermissionsDialog by remember { mutableStateOf(false) }
     var showTaskDetailDialog by remember { mutableStateOf(false) }
+    var showGoogleFitAuth by remember { mutableStateOf(false) }
+    var authErrorMessage by remember { mutableStateOf<String?>(null) }
 
     // Show permissions dialog if no permissions granted
     LaunchedEffect(permissionsState) {
@@ -60,6 +63,21 @@ fun StatisticsScreen(
                 )
 
                 Row {
+                    // Temporarily disable Google Fit Auth button to prevent crashes
+                    // TODO: Re-enable after fixing dependencies
+                    /*
+                    IconButton(
+                        onClick = { showGoogleFitAuth = true }
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.FitnessCenter,
+                            contentDescription = "Google Fit",
+                            tint = if (permissionsState.googleFitPermissions)
+                                Color(0xFF4CAF50) else timeBasedColors.textSecondaryColor
+                        )
+                    }
+                    */
+
                     // Settings button
                     IconButton(
                         onClick = { showPermissionsDialog = true }
@@ -71,14 +89,76 @@ fun StatisticsScreen(
                         )
                     }
 
-                    // Refresh button
-                    IconButton(
-                        onClick = { statsViewModel.refreshData() }
+                    // Refresh button with loading indicator
+                    if (summaryState.isLoading || timelineState.isLoading) {
+                        Box(
+                            modifier = Modifier.size(48.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(20.dp),
+                                strokeWidth = 2.dp
+                            )
+                        }
+                    } else {
+                        IconButton(
+                            onClick = {
+                                authErrorMessage = null
+                                statsViewModel.refreshData()
+                            }
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Refresh,
+                                contentDescription = "Refresh",
+                                tint = timeBasedColors.textSecondaryColor
+                            )
+                        }
+                    }
+                }
+            }
+
+            // Show auth error if any
+            authErrorMessage?.let { error ->
+                Spacer(modifier = Modifier.height(8.dp))
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(
+                        containerColor = Color(0xFFFF5722).copy(alpha = 0.1f)
+                    )
+                ) {
+                    Text(
+                        text = "Error: $error",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = Color(0xFFFF5722),
+                        modifier = Modifier.padding(12.dp)
+                    )
+                }
+            }
+
+            // Show connection status
+            if (!permissionsState.hasAnyPermissions) {
+                Spacer(modifier = Modifier.height(8.dp))
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(
+                        containerColor = Color(0xFFFFC107).copy(alpha = 0.1f)
+                    )
+                ) {
+                    Row(
+                        modifier = Modifier.padding(12.dp),
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
                         Icon(
-                            imageVector = Icons.Default.Refresh,
-                            contentDescription = "Refresh",
-                            tint = timeBasedColors.textSecondaryColor
+                            imageVector = Icons.Default.Warning,
+                            contentDescription = "Warning",
+                            tint = Color(0xFFFFC107),
+                            modifier = Modifier.size(20.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = "No fitness data source connected. Connect Google Fit or Health Connect to see your fitness statistics.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = Color(0xFFFFC107)
                         )
                     }
                 }
@@ -145,6 +225,32 @@ fun StatisticsScreen(
                     Spacer(modifier = Modifier.height(32.dp))
                 }
             }
+        }
+
+        // Google Fit Authentication Dialog
+        if (showGoogleFitAuth) {
+            AlertDialog(
+                onDismissRequest = { showGoogleFitAuth = false },
+                title = { Text("Google Fit Integration") },
+                text = {
+                    GoogleFitAuthCard(
+                        onAuthSuccess = {
+                            showGoogleFitAuth = false
+                            authErrorMessage = null
+                            statsViewModel.refreshData()
+                        },
+                        onAuthError = { error ->
+                            authErrorMessage = error
+                            showGoogleFitAuth = false
+                        }
+                    )
+                },
+                confirmButton = {
+                    TextButton(onClick = { showGoogleFitAuth = false }) {
+                        Text("Close")
+                    }
+                }
+            )
         }
 
         // Permissions Dialog

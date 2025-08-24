@@ -53,27 +53,30 @@ fun TaskHistorySection(
             ) {
                 Text(
                     text = "Task History",
-                    style = MaterialTheme.typography.titleLarge,
-                    color = timeBasedColors.textPrimaryColor,
-                    fontWeight = FontWeight.Bold
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = timeBasedColors.textPrimaryColor
                 )
 
-                Icon(
-                    imageVector = Icons.Default.History,
-                    contentDescription = "Task History",
-                    tint = timeBasedColors.accentColor,
-                    modifier = Modifier.size(24.dp)
-                )
+                IconButton(
+                    onClick = { /* Navigate to full history */ }
+                ) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.Assignment,
+                        contentDescription = "View All History",
+                        tint = timeBasedColors.textSecondaryColor
+                    )
+                }
             }
 
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(8.dp))
 
             // Filter chips
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                HistoryFilter.entries.forEach { filter ->
+                HistoryFilter.values().forEach { filter ->
                     FilterChip(
                         onClick = { onFilterChange(filter) },
                         label = {
@@ -108,18 +111,25 @@ fun TaskHistorySection(
                     EmptyHistoryMessage(historyState.filter)
                 }
                 else -> {
-                    LazyColumn(
+                    // Use Column instead of LazyColumn to avoid infinite height constraints
+                    Column(
                         verticalArrangement = Arrangement.spacedBy(8.dp),
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        items(
-                            items = historyState.items,
-                            key = { item -> item.habit.id }
-                        ) { item ->
+                        historyState.items.take(5).forEach { item ->
                             TaskHistoryCard(
                                 item = item,
                                 onClick = { onTaskClick(item.habit.id) }
                             )
+                        }
+
+                        if (historyState.items.size > 5) {
+                            TextButton(
+                                onClick = { /* Navigate to full history */ },
+                                modifier = Modifier.align(Alignment.CenterHorizontally)
+                            ) {
+                                Text("View All (${historyState.items.size} total)")
+                            }
                         }
                     }
                 }

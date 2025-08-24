@@ -3,8 +3,6 @@ package com.example.habittrackerr.ui.stats
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -83,15 +81,25 @@ fun TaskAnalyticsSection(
                 }
                 
                 else -> {
-                    LazyColumn(
-                        modifier = Modifier.heightIn(max = 300.dp),
+                    // Use Column instead of LazyColumn to avoid infinite height constraints
+                    Column(
+                        modifier = Modifier.fillMaxWidth(),
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        items(analyticsState.analytics) { analytics ->
+                        analyticsState.analytics.take(5).forEach { analytics ->
                             TaskAnalyticsCard(
                                 analytics = analytics,
                                 onClick = { onTaskClick(analytics.taskId) }
                             )
+                        }
+
+                        if (analyticsState.analytics.size > 5) {
+                            TextButton(
+                                onClick = { /* Navigate to full analytics */ },
+                                modifier = Modifier.align(Alignment.CenterHorizontally)
+                            ) {
+                                Text("View All Analytics (${analyticsState.analytics.size} total)")
+                            }
                         }
                     }
                 }

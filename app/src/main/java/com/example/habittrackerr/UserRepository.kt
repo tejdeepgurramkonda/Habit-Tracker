@@ -49,7 +49,8 @@ class UserRepository @Inject constructor(
     }
 
     suspend fun syncUserStatistics(userId: String) {
-        val habits = habitDao.getAllHabits().first()
+        val habitsFlow = habitDao.getAllHabits()
+        val habits = habitsFlow.first()
         val stats = calculateUserStatistics(habits)
 
         userProfileDao.updateTotalHabits(userId, stats.totalHabits)
