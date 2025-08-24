@@ -3,10 +3,45 @@
     xmlns:tools="http://schemas.android.com/tools">
 
     <!-- Permissions for timer alarm functionality -->
+    <uses-permission android:name="android.permission.CAMERA" />
     <uses-permission android:name="android.permission.VIBRATE" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
     <uses-permission android:name="android.permission.USE_EXACT_ALARM" />
     <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
+
+    <!-- Google Fit permissions for health data -->
+    <uses-permission android:name="android.permission.ACTIVITY_RECOGNITION" />
+    <uses-permission android:name="com.google.android.gms.permission.FITNESS_ACTIVITY_READ" />
+    <uses-permission android:name="com.google.android.gms.permission.FITNESS_BODY_READ" />
+    <uses-permission android:name="com.google.android.gms.permission.FITNESS_LOCATION_READ" />
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.INTERNET" />
+
+    <!-- Health Connect permissions (Primary) -->
+    <uses-permission android:name="android.permission.health.READ_STEPS" />
+    <uses-permission android:name="android.permission.health.READ_DISTANCE" />
+    <uses-permission android:name="android.permission.health.READ_TOTAL_CALORIES_BURNED" />
+    <uses-permission android:name="android.permission.health.READ_ACTIVE_CALORIES_BURNED" />
+    <uses-permission android:name="android.permission.health.READ_EXERCISE" />
+    <uses-permission android:name="android.permission.health.READ_SLEEP" />
+    <uses-permission android:name="android.permission.health.READ_HEART_RATE" />
+
+    <!-- Optional Health Connect write permissions for future features -->
+    <uses-permission android:name="android.permission.health.WRITE_STEPS" />
+    <uses-permission android:name="android.permission.health.WRITE_DISTANCE" />
+    <uses-permission android:name="android.permission.health.WRITE_TOTAL_CALORIES_BURNED" />
+
+    <!-- Biometric authentication permission -->
+    <uses-permission android:name="android.permission.USE_BIOMETRIC" />
+    <uses-permission android:name="android.permission.USE_FINGERPRINT" />
+
+    <!-- Network state permission -->
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+
+    <uses-feature
+        android:name="android.hardware.camera"
+        android:required="false" />
 
     <application
         android:name=".HabitTrackerApplication"
@@ -19,9 +54,26 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.HabitTracker"
         tools:targetApi="31">
+
+        <!-- OnePlus compatibility meta-data -->
+        <meta-data
+            android:name="com.google.android.gms.version"
+            android:value="12451000"
+            tools:replace="android:value" />
+
+        <meta-data
+            android:name="com.google.android.gms.auth.api.signin.internal.config"
+            android:value="true" />
+
+        <!-- Disable legacy SafetyNet for OnePlus compatibility -->
+        <meta-data
+            android:name="com.google.android.gms.safetynet.disable"
+            android:value="true" />
+
         <activity
             android:name=".MainActivity"
             android:exported="true"
+            android:label="@string/app_name"
             android:theme="@style/Theme.HabitTracker">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
