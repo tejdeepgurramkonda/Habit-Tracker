@@ -19,18 +19,8 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.CheckCircle
-import androidx.compose.material.icons.filled.Menu
-import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.filled.Info
-import androidx.compose.material.icons.filled.Help
-import androidx.compose.material.icons.filled.ExitToApp
-import androidx.compose.material.icons.filled.AccountCircle
-import androidx.compose.material.icons.filled.Notifications
-import androidx.compose.material.icons.filled.Assessment
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -47,9 +37,7 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.navigation.NavController
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Calendar
@@ -368,14 +356,12 @@ private fun isSameDay(timestamp1: Long, timestamp2: Long): Boolean {
 fun HabitDashboardScreen(
     habitViewModel: HabitViewModel = hiltViewModel()
 ) {
+    val timeBasedColors = LocalTimeBasedColors.current
     val dimensions = LocalResponsiveDimensions.current
     val habits by habitViewModel.habits.collectAsState()
     val showDialog by habitViewModel.showDialog.collectAsState()
     val selectedHabit by habitViewModel.selectedHabit.collectAsState()
     val selectedDate by habitViewModel.selectedDate.collectAsState()
-
-    val scope = rememberCoroutineScope()
-    val drawerState = rememberDrawerState(DrawerValue.Closed)
 
     // State for monthly calendar popup
     var showMonthlyCalendar by remember { mutableStateOf(false) }
@@ -392,185 +378,156 @@ fun HabitDashboardScreen(
     }
 
     DynamicGradientBackground {
-        val timeBasedColors = LocalTimeBasedColors.current
-
-        ModalNavigationDrawer(
-            drawerState = drawerState,
-            drawerContent = {
-                NavigationDrawerContent(
-                    timeBasedColors = timeBasedColors,
-                    onCloseDrawer = {
-                        scope.launch { drawerState.close() }
-                    }
-                )
-            }
-        ) {
-            Scaffold(
-                containerColor = Color.Transparent,
-                topBar = {
-                    TopAppBar(
-                        title = {
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Text(
-                                    text = "Today",
-                                    color = timeBasedColors.textPrimaryColor,
-                                    fontWeight = FontWeight.Bold,
-                                    style = MaterialTheme.typography.titleLarge.copy(
-                                        fontSize = MaterialTheme.typography.titleLarge.fontSize * dimensions.titleTextScale
-                                    )
+        Scaffold(
+            containerColor = Color.Transparent,
+            topBar = {
+                TopAppBar(
+                    title = {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = "Today",
+                                color = timeBasedColors.textPrimaryColor,
+                                fontWeight = FontWeight.Bold,
+                                style = MaterialTheme.typography.titleLarge.copy(
+                                    fontSize = MaterialTheme.typography.titleLarge.fontSize * dimensions.titleTextScale
                                 )
+                            )
 
-                                // Streak Display in Center
-                                Column(
-                                    horizontalAlignment = Alignment.CenterHorizontally
+                            // Streak Display in Center
+                            Column(
+                                horizontalAlignment = Alignment.CenterHorizontally
+                            ) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(dimensions.spacingSmall)
                                 ) {
-                                    Row(
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        horizontalArrangement = Arrangement.spacedBy(dimensions.spacingSmall)
-                                    ) {
-                                        Text(
-                                            text = "🔥",
-                                            style = MaterialTheme.typography.titleMedium.copy(
-                                                fontSize = MaterialTheme.typography.titleMedium.fontSize * dimensions.titleTextScale
-                                            )
-                                        )
-                                        Text(
-                                            text = currentStreak.toString(),
-                                            color = timeBasedColors.cardContentColor,
-                                            fontWeight = FontWeight.Bold,
-                                            style = MaterialTheme.typography.titleLarge.copy(
-                                                fontSize = MaterialTheme.typography.titleLarge.fontSize * dimensions.titleTextScale
-                                            )
-                                        )
-                                    }
                                     Text(
-                                        text = if (currentStreak == 1) "day streak" else "days streak",
-                                        color = timeBasedColors.textSecondaryColor,
-                                        style = MaterialTheme.typography.bodySmall.copy(
-                                            fontSize = MaterialTheme.typography.bodySmall.fontSize * dimensions.captionTextScale
+                                        text = "🔥",
+                                        style = MaterialTheme.typography.titleMedium.copy(
+                                            fontSize = MaterialTheme.typography.titleMedium.fontSize * dimensions.titleTextScale
+                                        )
+                                    )
+                                    Text(
+                                        text = currentStreak.toString(),
+                                        color = timeBasedColors.cardContentColor,
+                                        fontWeight = FontWeight.Bold,
+                                        style = MaterialTheme.typography.titleLarge.copy(
+                                            fontSize = MaterialTheme.typography.titleLarge.fontSize * dimensions.titleTextScale
                                         )
                                     )
                                 }
-
-                                // Month/Year aligned to the right
                                 Text(
-                                    text = currentMonthYear,
-                                    color = timeBasedColors.textPrimaryColor,
-                                    fontWeight = FontWeight.Medium,
-                                    style = MaterialTheme.typography.titleMedium.copy(
-                                        fontSize = MaterialTheme.typography.titleMedium.fontSize * dimensions.titleTextScale
-                                    ),
-                                    modifier = Modifier
-                                        .clickable(
-                                            indication = LocalIndication.current,
-                                            interactionSource = remember { MutableInteractionSource() }
-                                        ) { showMonthlyCalendar = true }
-                                        .padding(horizontal = dimensions.spacingMedium, vertical = dimensions.spacingSmall)
+                                    text = if (currentStreak == 1) "day streak" else "days streak",
+                                    color = timeBasedColors.textSecondaryColor,
+                                    style = MaterialTheme.typography.bodySmall.copy(
+                                        fontSize = MaterialTheme.typography.bodySmall.fontSize * dimensions.captionTextScale
+                                    )
                                 )
                             }
-                        },
-                        navigationIcon = {
-                            IconButton(
-                                onClick = {
-                                    scope.launch { drawerState.open() }
-                                },
-                                modifier = Modifier.size(dimensions.iconButtonSize)
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.Menu,
-                                    contentDescription = "Open Menu",
-                                    tint = timeBasedColors.textPrimaryColor,
-                                    modifier = Modifier.size(dimensions.iconSize)
-                                )
-                            }
-                        },
-                        colors = TopAppBarDefaults.topAppBarColors(
-                            containerColor = Color.Transparent
-                        ),
-                    )
-                }
-            ) { paddingValues ->
-                Column(
+
+                            // Month/Year aligned to the right
+                            Text(
+                                text = currentMonthYear,
+                                color = timeBasedColors.textPrimaryColor,
+                                fontWeight = FontWeight.Medium,
+                                style = MaterialTheme.typography.titleMedium.copy(
+                                    fontSize = MaterialTheme.typography.titleMedium.fontSize * dimensions.titleTextScale
+                                ),
+                                modifier = Modifier
+                                    .clickable(
+                                        indication = LocalIndication.current,
+                                        interactionSource = remember { MutableInteractionSource() }
+                                    ) { showMonthlyCalendar = true }
+                                    .padding(horizontal = dimensions.spacingMedium, vertical = dimensions.spacingSmall)
+                            )
+                        }
+                    },
+                    colors = TopAppBarDefaults.topAppBarColors(
+                        containerColor = Color.Transparent
+                    ),
+                    windowInsets = WindowInsets(0)
+                )
+            }
+        ) { paddingValues ->
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues)
+            ) {
+                // Horizontal Calendar
+                HorizontalCalendar(
+                    habits = habits,
+                    selectedDate = selectedDate,
+                    onDateSelected = { date -> habitViewModel.updateSelectedDate(date) },
+                    modifier = Modifier.padding(vertical = dimensions.spacingXSmall)
+                )
+
+                // Habit Progress Bar
+                ExpandableHabitProgressBar(
+                    habits = habits,
+                    modifier = Modifier.padding(vertical = dimensions.spacingXSmall)
+                )
+
+                // My Habits title
+                Text(
+                    text = "My Habits",
+                    style = MaterialTheme.typography.headlineMedium.copy(
+                        fontSize = MaterialTheme.typography.headlineMedium.fontSize * dimensions.titleTextScale
+                    ),
+                    fontWeight = FontWeight.Bold,
+                    color = timeBasedColors.textPrimaryColor,
+                    modifier = Modifier.padding(horizontal = dimensions.spacingLarge, vertical = dimensions.spacingXSmall)
+                )
+
+                // Habits List
+                LazyColumn(
                     modifier = Modifier
                         .fillMaxSize()
-                        .padding(paddingValues)
-                        .padding(top = dimensions.spacingMedium)
+                        .padding(horizontal = dimensions.spacingLarge),
+                    verticalArrangement = Arrangement.spacedBy(dimensions.spacingMedium),
+                    contentPadding = PaddingValues(vertical = dimensions.spacingLarge)
                 ) {
-                    // Horizontal Calendar
-                    HorizontalCalendar(
-                        habits = habits,
-                        selectedDate = selectedDate,
-                        onDateSelected = { date -> habitViewModel.updateSelectedDate(date) },
-                        modifier = Modifier.padding(vertical = dimensions.spacingXSmall)
-                    )
-
-                    // Habit Progress Bar
-                    ExpandableHabitProgressBar(
-                        habits = habits,
-                        modifier = Modifier.padding(vertical = dimensions.spacingXSmall)
-                    )
-
-                    // My Habits title
-                    Text(
-                        text = "My Habits",
-                        style = MaterialTheme.typography.headlineMedium.copy(
-                            fontSize = MaterialTheme.typography.headlineMedium.fontSize * dimensions.titleTextScale
-                        ),
-                        fontWeight = FontWeight.Bold,
-                        color = timeBasedColors.textPrimaryColor,
-                        modifier = Modifier.padding(horizontal = dimensions.spacingLarge, vertical = dimensions.spacingXSmall)
-                    )
-
-                    // Habits List
-                    LazyColumn(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(horizontal = dimensions.spacingLarge),
-                        verticalArrangement = Arrangement.spacedBy(dimensions.spacingMedium),
-                        contentPadding = PaddingValues(vertical = dimensions.spacingLarge)
-                    ) {
-                        if (habits.isEmpty()) {
-                            item {
-                                EmptyStateCard()
-                            }
-                        } else {
-                            items(habits, key = { habit -> habit.id }) { habit ->
-                                HabitCard(
-                                    habit = habit,
-                                    viewModel = habitViewModel,
-                                    selectedDate = selectedDate,
-                                    onLongPress = { habitViewModel.showEditDialog(habit) },
-                                    onDoubleClick = { habitViewModel.showEditDialog(habit) },
-                                    modifier = Modifier.animateItem()
-                                )
-                            }
+                    if (habits.isEmpty()) {
+                        item {
+                            EmptyStateCard()
+                        }
+                    } else {
+                        items(habits, key = { habit -> habit.id }) { habit ->
+                            HabitCard(
+                                habit = habit,
+                                viewModel = habitViewModel,
+                                selectedDate = selectedDate,
+                                onLongPress = { habitViewModel.showEditDialog(habit) },
+                                onDoubleClick = { habitViewModel.showEditDialog(habit) },
+                                modifier = Modifier.animateItem()
+                            )
                         }
                     }
                 }
-
-                // Show the habit dialog when needed
-                if (showDialog) {
-                    AddEditHabitDialog(
-                        habitViewModel = habitViewModel,
-                        habit = selectedHabit,
-                        onDismiss = { habitViewModel.hideDialog() }
-                    )
-                }
-
-                // Show monthly calendar popup when needed
-                if (showMonthlyCalendar) {
-                    MonthlyCalendarPopup(
-                        selectedDate = selectedDate,
-                        onDateSelected = { date -> habitViewModel.updateSelectedDate(date) },
-                        onDismiss = { showMonthlyCalendar = false },
-                        habits = habits
-                    )
-                }
             }
+        }
+
+        // Show the habit dialog when needed
+        if (showDialog) {
+            AddEditHabitDialog(
+                habitViewModel = habitViewModel,
+                habit = selectedHabit,
+                onDismiss = { habitViewModel.hideDialog() }
+            )
+        }
+
+        // Show monthly calendar popup when needed
+        if (showMonthlyCalendar) {
+            MonthlyCalendarPopup(
+                selectedDate = selectedDate,
+                onDateSelected = { date -> habitViewModel.updateSelectedDate(date) },
+                onDismiss = { showMonthlyCalendar = false },
+                habits = habits
+            )
         }
     }
 }
@@ -916,202 +873,6 @@ fun EmptyStateCard() {
                 textAlign = TextAlign.Center
             )
         }
-    }
-}
-
-@Composable
-fun NavigationDrawerContent(
-    timeBasedColors: TimeBasedColors,
-    onCloseDrawer: () -> Unit
-) {
-    ModalDrawerSheet(
-        modifier = Modifier.width(300.dp),
-        drawerContainerColor = timeBasedColors.cardBackgroundColor,
-        drawerContentColor = timeBasedColors.textPrimaryColor
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(16.dp)
-        ) {
-            // Profile Header
-            ProfileHeader(timeBasedColors = timeBasedColors)
-
-            HorizontalDivider(
-                modifier = Modifier.padding(vertical = 16.dp),
-                color = timeBasedColors.textSecondaryColor.copy(alpha = 0.3f)
-            )
-
-            // Menu Items
-            DrawerMenuItem(
-                icon = Icons.Default.Person,
-                title = "Profile",
-                timeBasedColors = timeBasedColors,
-                onClick = {
-                    // Handle profile navigation
-                    onCloseDrawer()
-                }
-            )
-
-            DrawerMenuItem(
-                icon = Icons.Default.AccountCircle,
-                title = "Account",
-                timeBasedColors = timeBasedColors,
-                onClick = {
-                    // Handle account navigation
-                    onCloseDrawer()
-                }
-            )
-
-            DrawerMenuItem(
-                icon = Icons.Default.Assessment,
-                title = "Statistics",
-                timeBasedColors = timeBasedColors,
-                onClick = {
-                    // Handle statistics navigation
-                    onCloseDrawer()
-                }
-            )
-
-            DrawerMenuItem(
-                icon = Icons.Default.Notifications,
-                title = "Notifications",
-                timeBasedColors = timeBasedColors,
-                onClick = {
-                    // Handle notifications navigation
-                    onCloseDrawer()
-                }
-            )
-
-            DrawerMenuItem(
-                icon = Icons.Default.Settings,
-                title = "Settings",
-                timeBasedColors = timeBasedColors,
-                onClick = {
-                    // Handle settings navigation
-                    onCloseDrawer()
-                }
-            )
-
-            DrawerMenuItem(
-                icon = Icons.Default.Help,
-                title = "Help & Support",
-                timeBasedColors = timeBasedColors,
-                onClick = {
-                    // Handle help navigation
-                    onCloseDrawer()
-                }
-            )
-
-            DrawerMenuItem(
-                icon = Icons.Default.Info,
-                title = "About",
-                timeBasedColors = timeBasedColors,
-                onClick = {
-                    // Handle about navigation
-                    onCloseDrawer()
-                }
-            )
-
-            Spacer(modifier = Modifier.weight(1f))
-
-            HorizontalDivider(
-                modifier = Modifier.padding(vertical = 16.dp),
-                color = timeBasedColors.textSecondaryColor.copy(alpha = 0.3f)
-            )
-
-            // Logout
-            DrawerMenuItem(
-                icon = Icons.Default.ExitToApp,
-                title = "Logout",
-                timeBasedColors = timeBasedColors,
-                isDestructive = true,
-                onClick = {
-                    // Handle logout
-                    onCloseDrawer()
-                }
-            )
-        }
-    }
-}
-
-@Composable
-fun ProfileHeader(timeBasedColors: TimeBasedColors) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 16.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        // Profile Picture
-        Box(
-            modifier = Modifier
-                .size(80.dp)
-                .clip(CircleShape)
-                .background(timeBasedColors.cardContentColor),
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(
-                imageVector = Icons.Default.Person,
-                contentDescription = "Profile Picture",
-                tint = Color.White,
-                modifier = Modifier.size(40.dp)
-            )
-        }
-
-        Spacer(modifier = Modifier.height(12.dp))
-
-        // User Name
-        Text(
-            text = "John Doe",
-            style = MaterialTheme.typography.titleLarge,
-            fontWeight = FontWeight.Bold,
-            color = timeBasedColors.textPrimaryColor
-        )
-
-        // User Email
-        Text(
-            text = "john.doe@example.com",
-            style = MaterialTheme.typography.bodyMedium,
-            color = timeBasedColors.textSecondaryColor
-        )
-    }
-}
-
-@Composable
-fun DrawerMenuItem(
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
-    title: String,
-    timeBasedColors: TimeBasedColors,
-    isDestructive: Boolean = false,
-    onClick: () -> Unit
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(12.dp))
-            .clickable(
-                indication = LocalIndication.current,
-                interactionSource = remember { MutableInteractionSource() }
-            ) { onClick() }
-            .padding(horizontal = 12.dp, vertical = 16.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Icon(
-            imageVector = icon,
-            contentDescription = title,
-            tint = if (isDestructive) Color(0xFFE53E3E) else timeBasedColors.cardContentColor,
-            modifier = Modifier.size(24.dp)
-        )
-
-        Spacer(modifier = Modifier.width(16.dp))
-
-        Text(
-            text = title,
-            style = MaterialTheme.typography.bodyLarge,
-            color = if (isDestructive) Color(0xFFE53E3E) else timeBasedColors.textPrimaryColor,
-            fontWeight = FontWeight.Medium
-        )
     }
 }
 

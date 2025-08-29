@@ -15,7 +15,6 @@ import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
@@ -23,7 +22,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Remove
@@ -67,7 +65,7 @@ data class TimerPreset(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun TimerScreen(onOpenDrawer: () -> Unit = {}) {
+fun TimerScreen() {
     val dimensions = LocalResponsiveDimensions.current
     val timeBasedColors = LocalTimeBasedColors.current
     val context = LocalContext.current
@@ -86,6 +84,9 @@ fun TimerScreen(onOpenDrawer: () -> Unit = {}) {
 
     // Media player for alarm sound
     var mediaPlayer by remember { mutableStateOf<MediaPlayer?>(null) }
+
+    // Vibrator for alarm vibration
+    var vibrator by remember { mutableStateOf<Vibrator?>(null) }
 
     // Animation states
     val progress by animateFloatAsState(
@@ -154,6 +155,17 @@ fun TimerScreen(onOpenDrawer: () -> Unit = {}) {
         }
     }
 
+    // Initialize vibrator
+    LaunchedEffect(Unit) {
+        vibrator = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            val vibratorManager = context.getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as VibratorManager
+            vibratorManager.defaultVibrator
+        } else {
+            @Suppress("DEPRECATION")
+            context.getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
+        }
+    }
+
     // Timer countdown logic with perfect synchronization
     LaunchedEffect(timerState, remainingTimeInSeconds) {
         when (timerState) {
@@ -165,14 +177,14 @@ fun TimerScreen(onOpenDrawer: () -> Unit = {}) {
                     // Timer finished - trigger alarm
                     timerState = TimerState.FINISHED
                     isAlarmActive = true
-                    triggerAlarm(context, mediaPlayer, hapticFeedback)
+                    triggerAlarm(context, mediaPlayer, hapticFeedback, vibrator)
                 }
             }
             TimerState.FINISHED -> {
                 // Auto-stop alarm after 60 seconds if not manually stopped
                 delay(60000L)
                 if (isAlarmActive) {
-                    stopAlarm(mediaPlayer)
+                    stopAlarm(mediaPlayer, vibrator)
                     isAlarmActive = false
                     timerState = TimerState.STOPPED
                     remainingTimeInSeconds = totalTimeInSeconds
@@ -212,18 +224,10 @@ fun TimerScreen(onOpenDrawer: () -> Unit = {}) {
                             style = MaterialTheme.typography.titleLarge
                         )
                     },
-                    navigationIcon = {
-                        IconButton(onClick = onOpenDrawer) {
-                            Icon(
-                                imageVector = Icons.Default.Menu,
-                                contentDescription = "Open Menu",
-                                tint = timeBasedColors.textPrimaryColor
-                            )
-                        }
-                    },
                     colors = TopAppBarDefaults.topAppBarColors(
                         containerColor = Color.Transparent
-                    )
+                    ),
+                    windowInsets = WindowInsets(0)
                 )
             }
         ) { paddingValues ->
@@ -239,8 +243,11 @@ fun TimerScreen(onOpenDrawer: () -> Unit = {}) {
                         .fillMaxSize()
                         .padding(bottom = 120.dp), // Space for control buttons
                     horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.SpaceEvenly
+                    verticalArrangement = Arrangement.Top
                 ) {
+                    // Add top spacing
+                    Spacer(modifier = Modifier.height(dimensions.spacingXSmall))
+
                     // Timer presets (only show when stopped)
                     AnimatedVisibility(
                         visible = timerState == TimerState.STOPPED,
@@ -260,6 +267,9 @@ fun TimerScreen(onOpenDrawer: () -> Unit = {}) {
                         )
                     }
 
+                    // Add extra space between Quick Timers and circular progress ring
+                    Spacer(modifier = Modifier.height(dimensions.spacingXLarge))
+
                     // Main timer display
                     TimerDisplaySection(
                         remainingTime = remainingTimeInSeconds,
@@ -271,6 +281,9 @@ fun TimerScreen(onOpenDrawer: () -> Unit = {}) {
                         dimensions = dimensions,
                         timeBasedColors = timeBasedColors
                     )
+
+                    // Add space between timer display and time adjustment controls
+                    Spacer(modifier = Modifier.height(dimensions.spacingSmall))
 
                     // Time adjustment controls (only when stopped)
                     AnimatedVisibility(
@@ -313,7 +326,7 @@ fun TimerScreen(onOpenDrawer: () -> Unit = {}) {
                                 onClick = {
                                     if (totalTimeInSeconds > 0) {
                                         timerState = TimerState.RUNNING
-                                        stopAlarm(mediaPlayer)
+                                        stopAlarm(mediaPlayer, vibrator)
                                         isAlarmActive = false
                                     }
                                 },
@@ -347,7 +360,7 @@ fun TimerScreen(onOpenDrawer: () -> Unit = {}) {
                                 onClick = {
                                     timerState = TimerState.STOPPED
                                     remainingTimeInSeconds = totalTimeInSeconds
-                                    stopAlarm(mediaPlayer)
+                                    stopAlarm(mediaPlayer, vibrator)
                                     isAlarmActive = false
                                 },
                                 containerColor = Color.Red,
@@ -380,7 +393,7 @@ fun TimerScreen(onOpenDrawer: () -> Unit = {}) {
                                 onClick = {
                                     timerState = TimerState.STOPPED
                                     remainingTimeInSeconds = totalTimeInSeconds
-                                    stopAlarm(mediaPlayer)
+                                    stopAlarm(mediaPlayer, vibrator)
                                     isAlarmActive = false
                                 },
                                 containerColor = Color.Red,
@@ -398,7 +411,7 @@ fun TimerScreen(onOpenDrawer: () -> Unit = {}) {
                         TimerState.FINISHED -> {
                             FloatingActionButton(
                                 onClick = {
-                                    stopAlarm(mediaPlayer)
+                                    stopAlarm(mediaPlayer, vibrator)
                                     isAlarmActive = false
                                     timerState = TimerState.STOPPED
                                     remainingTimeInSeconds = totalTimeInSeconds
@@ -743,7 +756,7 @@ fun formatTime(totalSeconds: Int): String {
     }
 }
 
-fun triggerAlarm(context: Context, mediaPlayer: MediaPlayer?, hapticFeedback: androidx.compose.ui.hapticfeedback.HapticFeedback) {
+fun triggerAlarm(context: Context, mediaPlayer: MediaPlayer?, hapticFeedback: androidx.compose.ui.hapticfeedback.HapticFeedback, vibrator: Vibrator?) {
     // Play alarm sound
     try {
         mediaPlayer?.start()
@@ -755,29 +768,31 @@ fun triggerAlarm(context: Context, mediaPlayer: MediaPlayer?, hapticFeedback: an
     hapticFeedback.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.LongPress)
 
     // Trigger vibration
-    val vibrator = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-        val vibratorManager = context.getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as VibratorManager
-        vibratorManager.defaultVibrator
-    } else {
-        @Suppress("DEPRECATION")
-        context.getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
-    }
-
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-        val pattern = longArrayOf(0, 500, 200, 500, 200, 500, 200, 1000)
-        val effect = VibrationEffect.createWaveform(pattern, 0)
-        vibrator.vibrate(effect)
-    } else {
-        @Suppress("DEPRECATION")
-        val pattern = longArrayOf(0, 500, 200, 500, 200, 500, 200, 1000)
-        vibrator.vibrate(pattern, 0)
+    vibrator?.let { vib ->
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val pattern = longArrayOf(0, 500, 200, 500, 200, 500, 200, 1000)
+            val effect = VibrationEffect.createWaveform(pattern, 0)
+            vib.vibrate(effect)
+        } else {
+            @Suppress("DEPRECATION")
+            val pattern = longArrayOf(0, 500, 200, 500, 200, 500, 200, 1000)
+            vib.vibrate(pattern, 0)
+        }
     }
 }
 
-fun stopAlarm(mediaPlayer: MediaPlayer?) {
+fun stopAlarm(mediaPlayer: MediaPlayer?, vibrator: Vibrator?) {
+    // Stop media player
     try {
         mediaPlayer?.pause()
         mediaPlayer?.seekTo(0)
+    } catch (e: Exception) {
+        e.printStackTrace()
+    }
+
+    // Stop vibration
+    try {
+        vibrator?.cancel()
     } catch (e: Exception) {
         e.printStackTrace()
     }
